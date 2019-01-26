@@ -50,14 +50,9 @@ function useWindowMouse() {
   return position;
 }
 
-function useKeyState(callback) {
-  const keyStateRef = useRef(null);
-
-  if (keyStateRef.current === null) {
-    keyStateRef.current = defaultKeyState.slice();
-  }
-
-  const keyState = keyStateRef.current;
+function useKeyState() {
+  const [keyStates, setKeyStates] = useState([defaultKeyState, defaultKeyState]);
+  const [keyState, previousKeyState] = keyStates;
 
   useEffect(function () {
     const onKey = function (event) {
@@ -75,9 +70,7 @@ function useKeyState(callback) {
         return;
       }
 
-      keyState[keyIndex] = isDown;
-
-      callback(keyIndex, isDown);
+      setKeyStates(([keyState, _]) => [arraySetAt(keyState, keyIndex, isDown), keyState]);
     };
 
     window.addEventListener('keydown', onKey);
@@ -87,9 +80,9 @@ function useKeyState(callback) {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('keyup', onKey);
     };
-  });
+  }, [keyStates]);
 
-  return [keyState];
+  return [keyState, previousKeyState];
 }
 
 function useSequencer(isPlaying, sequence) {
@@ -181,22 +174,27 @@ export default function KeySeq() {
   const [sequence, setSequence] = useState(defaultSequence);
   const [sequencerIndex] = useSequencer(isPlaying, sequence);
   const [mouseX, mouseY] = useWindowMouse();
+  const [keyState, previousKeyState] = useKeyState();
 
   const selectedColumn = columns[Math.floor(mouseX * columns.length)];
 
-  const [keyState] = useKeyState(function (keyIndex, isDown) {
-    if (isDown) {
-      const cell = sequence[keyIndex];
+  // keyState change
+  useEffect(function () {
+    keyState.forEach(function (value, index) {
+      if (value && !previousKeyState[index]) {
+        const cell = sequence[index];
 
-      const newCell = {
-        ...cell,
-        ...selectedColumn.fromFloat(mouseY, cell)
-      };
+        const newCell = {
+          ...cell,
+          ...selectedColumn.fromFloat(mouseY, cell)
+        };
 
-      setSequence(arraySetAt(sequence, keyIndex, newCell));
-    }
-  });
+        setSequence(arraySetAt(sequence, index, newCell));
+      }
+    });
+  }, [keyState, previousKeyState]);
 
+  // mouse move
   useEffect(function () {
     if (!keyState.find(x => x)) {
       return;
