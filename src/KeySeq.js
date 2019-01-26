@@ -5,7 +5,7 @@ import { arraySetAt } from './utils/array';
 import VisualScheduler from './webaudio/VisualScheduler';
 
 const emptyCell = {
-  gain: 0,
+  gain: 1,
   note: 0
 };
 
@@ -17,7 +17,7 @@ const columns = [
     label: 'Note',
     key: 'note',
     color: 'magenta',
-    fromFloat: (y, cell) => ({ note: Math.round(y * 12), gain: cell.gain === 0 ? 1 : cell.gain }),
+    fromFloat: (y, _cell) => ({ note: Math.round(y * 12) }),
     toFloat: y => y / 12
   },
   {
@@ -105,8 +105,8 @@ function useSequencer(isPlaying, sequence) {
     const sequenceIndex = index % sequence.length;
     const cell = sequence[sequenceIndex];
 
-    if (cell.gain > 0) {
-      const frequency = 440 * Math.pow(2, cell.note / 12);
+    if (cell.note > 0 && cell.gain > 0) {
+      const frequency = 440 * Math.pow(2, (cell.note - 1) / 12);
 
       // create nodes
       const osc = audioContext.createOscillator();
