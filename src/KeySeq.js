@@ -4,6 +4,9 @@ import Scheduler from './webaudio/Scheduler';
 import { arraySetAt } from './utils/array';
 import VisualScheduler from './webaudio/VisualScheduler';
 
+// alternative to using inline self-executing function
+const f = (callback) => callback();
+
 const emptyCell = {
   gain: 1,
   note: 0
@@ -17,15 +20,17 @@ const columns = [
     label: 'Note',
     key: 'note',
     color: 'magenta',
-    fromFloat: (y, _cell) => ({ note: Math.round(y * 12) }),
-    toFloat: y => y / 12
+    fromMouse: y => Math.round(y * 12),
+    toMouse: value => value / 12,
+    toString: value => value > 0 ? value.toString() : 'None'
   },
   {
     label: 'Gain',
     key: 'gain',
     color: 'yellow',
-    fromFloat: (y, _cell) => ({ gain: y }),
-    toFloat: y => y
+    fromMouse: y => y,
+    toMouse: value => value,
+    toString: value => `${Math.floor(value * 100)}%`
   }
 ];
 
@@ -140,19 +145,39 @@ function useSequencer(isPlaying, sequence) {
   return [index];
 }
 
+function VerticalMeter({ backgroundColor, color, scale, children }) {
+  return (
+    <div
+      className="flex-auto-basis relative flex justify-center items-center"
+      style={{
+        backgroundColor,
+        zIndex: 0
+      }}
+    >
+      <div
+        className="absolute absolute--fill"
+        style={{
+          backgroundColor: color,
+          transform: `scale3d(1, ${scale}, 1)`,
+          transformOrigin: '100% 100%',
+          zIndex: -1
+        }}
+      />
+      {children}
+    </div>
+  );
+}
+
 function Cell({ label, cell }) {
   return (
     <div className="flex bg-gray absolute absolute--fill">
       {columns.map(function (column, index) {
         return (
-          <div
+          <VerticalMeter
             key={index}
-            className="flex-auto"
-            style={{
-              backgroundColor: column.color,
-              transform: `scale3d(1, ${column.toFloat(cell[column.key])}, 1)`,
-              transformOrigin: '100% 100%'
-            }}
+            backgroundColor="green"
+            color={column.color}
+            scale={column.toMouse(cell[column.key])}
           />
         );
       })}
@@ -186,7 +211,7 @@ export default function KeySeq() {
 
         const newCell = {
           ...cell,
-          ...selectedColumn.fromFloat(mouseY, cell)
+          [selectedColumn.key]: selectedColumn.fromMouse(mouseY)
         };
 
         setSequence(arraySetAt(sequence, index, newCell));
@@ -204,7 +229,7 @@ export default function KeySeq() {
       if (keyState[index]) {
         return {
           ...cell,
-          ...selectedColumn.fromFloat(mouseY, cell)
+          [selectedColumn.key]: selectedColumn.fromMouse(mouseY)
         };
       }
 
@@ -216,7 +241,36 @@ export default function KeySeq() {
 
   return (
     <div className="h-100 relative">
-      <div className="w-100 h-100 absolute flex justify-center items-center">
+      <div className="absolute absolute--fill flex">
+        {columns.map(function (column, index) {
+          const colors = {
+            gain: ['red', 'blue'],
+            note: ['yellow', 'teal']
+          };
+
+          const [backgroundColor, color, scale, valueString] = f(() => {
+            if (column === selectedColumn) {
+              const value = column.fromMouse(mouseY);
+
+              return [...colors[column.key], column.toMouse(value), column.toString(value)];
+            } else {
+              return ["grey", "", 0, null];
+            }
+          });
+
+          return (
+            <VerticalMeter
+              key={index}
+              backgroundColor={backgroundColor}
+              color={color}
+              scale={scale}
+            >
+              {column.label + (valueString ? ' ' + valueString : '')}
+            </VerticalMeter>
+          );
+        })}
+      </div>
+      <div className="absolute absolute--fill flex justify-center items-center">
         {keyState.map(function (value, index) {
           const scale = sequencerIndex === index ? '1.5' : '1';
 
