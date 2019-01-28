@@ -60,6 +60,11 @@ function useKeyState() {
   const [keyState, previousKeyState] = keyStates;
 
   useEffect(function () {
+    // prevent stuck keys - reset state
+    const onWindowBlur = function () {
+      setKeyStates(([keyState, _]) => [defaultKeyState, keyState]);
+    };
+
     const onKey = function (event) {
       const keyIndex = event.keyCode - 49;
 
@@ -78,10 +83,12 @@ function useKeyState() {
       setKeyStates(([keyState, _]) => [arraySetAt(keyState, keyIndex, isDown), keyState]);
     };
 
+    window.addEventListener('blur', onWindowBlur);
     window.addEventListener('keydown', onKey);
     window.addEventListener('keyup', onKey);
 
     return function () {
+      window.removeEventListener('blur', onWindowBlur);
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('keyup', onKey);
     };
