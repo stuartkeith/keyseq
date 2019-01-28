@@ -8,14 +8,19 @@ import VisualScheduler from './webaudio/VisualScheduler';
 const f = (callback) => callback();
 
 const emptyCell = {
+  note: 0,
   gain: 1,
-  note: 0
+  filter: 1
 };
 
 const defaultKeyState = new Array(8).fill(false);
 const defaultSequence = defaultKeyState.map(_ => emptyCell);
 
 const scale = [0, 2, 3, 5, 7, 8, 11]; // harmonic minor
+
+function numberToPercentageString(number) {
+  return `${Math.floor(number * 100)}%`;
+}
 
 const columns = [
   {
@@ -32,7 +37,15 @@ const columns = [
     color: 'yellow',
     fromMouse: y => y,
     toMouse: value => value,
-    toString: value => `${Math.floor(value * 100)}%`
+    toString: numberToPercentageString
+  },
+  {
+    label: 'Filter',
+    key: 'filter',
+    color: 'beige',
+    fromMouse: y => y,
+    toMouse: value => value,
+    toString: numberToPercentageString
   }
 ];
 
@@ -130,6 +143,16 @@ function useSequencer(isPlaying, sequence) {
       osc.type = 'square';
       osc.frequency.value = frequency;
 
+      const filterMin = 100;
+      const filterMax = 22000;
+      const filterRange = filterMax - filterMin;
+      const filterLog = Math.log2(filterMax / filterMin);
+      const filterLogScale = filterMin + (filterRange * Math.pow(2, filterLog * (cell.filter - 1)));
+
+      const lowpassNode = audioContext.createBiquadFilter();
+      lowpassNode.type = 'lowpass';
+      lowpassNode.frequency.value = filterLogScale;
+
       const gainNode = audioContext.createGain();
       gainNode.gain.value = Math.pow(cell.gain, 1.6);
 
@@ -137,7 +160,8 @@ function useSequencer(isPlaying, sequence) {
       osc.stop(beatTime + (beatLength * 0.9));
 
       // routing
-      osc.connect(gainNode);
+      osc.connect(lowpassNode);
+      lowpassNode.connect(gainNode);
       gainNode.connect(audioContext.destination);
     }
 
@@ -256,8 +280,9 @@ export default function KeySeq() {
       <div className="absolute absolute--fill flex">
         {columns.map(function (column, index) {
           const colors = {
+            note: ['yellow', 'teal'],
             gain: ['red', 'blue'],
-            note: ['yellow', 'teal']
+            filter: ['magenta', 'green']
           };
 
           const [backgroundColor, color, scale, valueString] = f(() => {
