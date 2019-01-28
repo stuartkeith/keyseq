@@ -15,13 +15,15 @@ const emptyCell = {
 const defaultKeyState = new Array(8).fill(false);
 const defaultSequence = defaultKeyState.map(_ => emptyCell);
 
+const scale = [0, 2, 3, 5, 7, 8, 11]; // harmonic minor
+
 const columns = [
   {
     label: 'Note',
     key: 'note',
     color: 'magenta',
-    fromMouse: y => Math.round(y * 12),
-    toMouse: value => value / 12,
+    fromMouse: y => Math.floor(y * (scale.length + 1)),
+    toMouse: value => (value / scale.length),
     toString: value => value > 0 ? value.toString() : 'None'
   },
   {
@@ -118,7 +120,10 @@ function useSequencer(isPlaying, sequence) {
     const cell = sequence[sequenceIndex];
 
     if (cell.note > 0 && cell.gain > 0) {
-      const frequency = 440 * Math.pow(2, (cell.note - 1) / 12);
+      const scaleIndex = cell.note - 1;
+      const scaleNote = scale[scaleIndex];
+
+      const frequency = 440 * Math.pow(2, scaleNote / 12);
 
       // create nodes
       const osc = audioContext.createOscillator();
