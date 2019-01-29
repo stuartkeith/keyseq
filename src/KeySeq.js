@@ -120,7 +120,7 @@ function useSequencer(isPlaying, sequence) {
   const [index, setIndex] = useState(0);
 
   if (schedulerInstance.current === null) {
-    schedulerInstance.current = new Scheduler();
+    schedulerInstance.current = new Scheduler(96);
   }
 
   if (visualSchedulerInstance.current === null) {
@@ -133,10 +133,11 @@ function useSequencer(isPlaying, sequence) {
   scheduler.callback = function (beatTime, beatLength, index) {
     const sequenceIndex = index % sequence.length;
     const cell = sequence[sequenceIndex];
+    const beatTimeOffset = beatTime + (sequenceIndex % 2 ? 0 : beatLength * 0.3);
 
     if (cell.note > 0 && cell.gain > 0) {
       const scaleIndex = cell.note - 1;
-      const scaleNote = scale[scaleIndex];
+      const scaleNote = scale[scaleIndex] - 12;
 
       const frequency = 440 * Math.pow(2, scaleNote / 12);
 
@@ -158,7 +159,7 @@ function useSequencer(isPlaying, sequence) {
       const gainNode = audioContext.createGain();
       gainNode.gain.value = Math.pow(cell.gain, 1.6);
 
-      osc.start(beatTime);
+      osc.start(beatTimeOffset);
       osc.stop(beatTime + (beatLength * 0.9));
 
       // routing
@@ -167,7 +168,7 @@ function useSequencer(isPlaying, sequence) {
       gainNode.connect(audioContext.destination);
     }
 
-    visualScheduler.push(sequenceIndex, beatTime);
+    visualScheduler.push(sequenceIndex, beatTimeOffset);
   };
 
   visualScheduler.callback = function (value) {
