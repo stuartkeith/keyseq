@@ -7,6 +7,8 @@ import VisualScheduler from './webaudio/VisualScheduler';
 // alternative to using inline self-executing function
 const f = (callback) => callback();
 
+const inRange = (value, min, max) => Math.min(max, Math.max(min, value));
+
 const emptyCell = {
   note: 0,
   gain: 1,
@@ -54,8 +56,8 @@ function useWindowMouse() {
 
   useEffect(function () {
     const onMouseMove = function (event) {
-      const x = event.pageX / window.innerWidth;
-      const y = 1 - (event.pageY / window.innerHeight);
+      const x = inRange(event.pageX / window.innerWidth, 0, 1);
+      const y = inRange(1 - (event.pageY / window.innerHeight), 0, 1);
 
       setPosition([x, y]);
     };
