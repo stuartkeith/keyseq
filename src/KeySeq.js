@@ -344,8 +344,10 @@ export default function KeySeq() {
           );
         })}
       </div>
-      <div className="relative">
+      <div className="relative pa3 flex">
         <button
+          className="input-reset dib bw0 w3 pa2"
+          style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)' }}
           onClick={() => setIsPlaying(!isPlaying)}
         >
             {isPlaying ? 'Stop' : 'Play'}
