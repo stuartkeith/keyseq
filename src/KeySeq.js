@@ -15,8 +15,7 @@ const emptyCell = {
   filter: 1
 };
 
-const defaultKeyState = new Array(8).fill(false);
-const defaultSequence = defaultKeyState.map(_ => emptyCell);
+const sequenceKeys = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
 const scale = [0, 2, 3, 5, 7, 8, 11]; // harmonic minor
 
@@ -72,46 +71,53 @@ function useWindowMouse() {
   return position;
 }
 
-function useKeyState() {
-  const [keyStates, setKeyStates] = useState([defaultKeyState, defaultKeyState]);
-  const [keyState, previousKeyState] = keyStates;
+function useKeyboard(callback, inputs) {
+  const stateRef = useRef(null);
+
+  if (stateRef.current === null) {
+    stateRef.current = {};
+  }
+
+  const state = stateRef.current;
 
   useEffect(function () {
-    // prevent stuck keys - reset state
+    // prevent stuck keys
     const onWindowBlur = function () {
-      setKeyStates(([keyState, _]) => [defaultKeyState, keyState]);
+      Object.keys(state).forEach(function (key) {
+        if (state[key]) {
+          state[key] = false;
+
+          callback(key, false);
+        }
+      });
     };
 
-    const onKey = function (event) {
-      const keyIndex = event.keyCode - 49;
-
-      if (keyIndex < 0 || keyIndex >= keyState.length) {
+    const onKeyDown = function (event) {
+      if (state[event.key] === true) {
         return;
       }
 
-      event.preventDefault();
+      state[event.key] = true;
 
-      const isDown = event.type === 'keydown';
+      callback(event.key, true);
+    };
 
-      if (keyState[keyIndex] === isDown) {
-        return;
-      }
+    const onKeyUp = function (event) {
+      state[event.key] = false;
 
-      setKeyStates(([keyState, _]) => [arraySetAt(keyState, keyIndex, isDown), keyState]);
+      callback(event.key, false);
     };
 
     window.addEventListener('blur', onWindowBlur);
-    window.addEventListener('keydown', onKey);
-    window.addEventListener('keyup', onKey);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
 
     return function () {
       window.removeEventListener('blur', onWindowBlur);
-      window.removeEventListener('keydown', onKey);
-      window.removeEventListener('keyup', onKey);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
     };
-  }, [keyStates]);
-
-  return [keyState, previousKeyState];
+  }, inputs);
 }
 
 function useSequencer(isPlaying, sequence) {
@@ -235,28 +241,34 @@ function Cell({ label, cell }) {
 
 export default function KeySeq() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [sequence, setSequence] = useState(defaultSequence);
+  const [sequence, setSequence] = useState(() => sequenceKeys.map(_ => emptyCell));
+  const [keyState, setKeyState] = useState(() => sequenceKeys.map(_ => false));
   const [sequencerIndex] = useSequencer(isPlaying, sequence);
   const [mouseX, mouseY] = useWindowMouse();
-  const [keyState, previousKeyState] = useKeyState();
 
   const selectedColumn = columns[Math.floor(mouseX * columns.length)];
 
-  // keyState change
-  useEffect(function () {
-    keyState.forEach(function (value, index) {
-      if (value && !previousKeyState[index]) {
-        const cell = sequence[index];
+  useKeyboard(function (key, isDown) {
+    const sequenceKeysIndex = sequenceKeys.indexOf(key);
+
+    if (sequenceKeysIndex >= 0) {
+      if (isDown) {
+        const cell = sequence[sequenceKeysIndex];
 
         const newCell = {
           ...cell,
           [selectedColumn.key]: selectedColumn.fromMouse(mouseY)
         };
 
-        setSequence(arraySetAt(sequence, index, newCell));
+        // need to use function to access state
+        // see https://github.com/facebook/react/issues/14750
+        setKeyState(keyState => arraySetAt(keyState, sequenceKeysIndex, true));
+        setSequence(sequence => arraySetAt(sequence, sequenceKeysIndex, newCell));
+      } else {
+        setKeyState(keyState => arraySetAt(keyState, sequenceKeysIndex, false));
       }
-    });
-  }, [keyState, previousKeyState]);
+    }
+  }, [keyState, mouseY, selectedColumn, sequence]);
 
   // mouse move
   useEffect(function () {
