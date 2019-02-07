@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { arraySetAt } from './utils/array';
 import audioContext from './webaudio/audioContext';
 import Scheduler from './webaudio/Scheduler';
-import { arraySetAt } from './utils/array';
 import VisualScheduler from './webaudio/VisualScheduler';
 
 // alternative to using inline self-executing function
