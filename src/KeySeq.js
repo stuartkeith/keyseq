@@ -23,11 +23,32 @@ function numberToPercentageString(number) {
   return `${Math.floor(number * 100)}%`;
 }
 
+function generateColumnColorSet(index, lightnessModifier) {
+  const startDegree = 214;
+  const degreeStep = 25;
+  const saturation = 47;
+
+  const hue = startDegree + (degreeStep * index);
+
+  return {
+    background: `hsl(${hue}, ${saturation}%, ${80 + lightnessModifier}%)`,
+    foreground: `hsl(${hue}, ${saturation}%, ${64 + lightnessModifier}%)`,
+    text: `hsl(${hue}, ${saturation}%, 19%)`,
+  };
+}
+
+function generateColumnColors(index) {
+  return [
+    generateColumnColorSet(index, 0),
+    generateColumnColorSet(index, 3)
+  ];
+}
+
 const columns = [
   {
     label: 'Note',
     key: 'note',
-    color: 'magenta',
+    colors: generateColumnColors(0),
     fromMouse: y => Math.floor(y * (scale.length + 1)),
     toMouse: value => (value / scale.length),
     toString: value => value > 0 ? value.toString() : 'None'
@@ -35,7 +56,7 @@ const columns = [
   {
     label: 'Gain',
     key: 'gain',
-    color: 'yellow',
+    colors: generateColumnColors(1),
     fromMouse: y => y,
     toMouse: value => value,
     toString: numberToPercentageString
@@ -43,7 +64,7 @@ const columns = [
   {
     label: 'Filter',
     key: 'filter',
-    color: 'beige',
+    colors: generateColumnColors(2),
     fromMouse: y => y,
     toMouse: value => value,
     toString: numberToPercentageString
@@ -190,51 +211,25 @@ function useSequencer(isPlaying, sequence) {
   return [index];
 }
 
-function VerticalMeter({ backgroundColor, color, scale, children }) {
+function VerticalMeter({ colors, scale, children }) {
   return (
     <div
-      className="flex-auto-basis relative flex justify-center items-center"
+      className="flex-auto-basis relative flex justify-center items-center z-0"
       style={{
-        backgroundColor,
-        zIndex: 0
+        backgroundColor: colors.background,
+        color: colors.text
       }}
     >
       <div
         className="absolute absolute--fill"
         style={{
-          backgroundColor: color,
+          backgroundColor: colors.foreground,
           transform: `scale3d(1, ${scale}, 1)`,
           transformOrigin: '100% 100%',
           zIndex: -1
         }}
       />
       {children}
-    </div>
-  );
-}
-
-function Cell({ label, cell }) {
-  return (
-    <div className="flex bg-gray absolute absolute--fill">
-      {columns.map(function (column, index) {
-        return (
-          <VerticalMeter
-            key={index}
-            backgroundColor="green"
-            color={column.color}
-            scale={column.toMouse(cell[column.key])}
-          />
-        );
-      })}
-      {label ?
-        <div
-          className="absolute absolute--fill flex justify-center items-center"
-        >
-          {label}
-        </div>
-        :
-        null
-      }
     </div>
   );
 }
@@ -294,27 +289,20 @@ export default function KeySeq() {
     <div className="h-100 relative">
       <div className="absolute absolute--fill flex">
         {columns.map(function (column, index) {
-          const colors = {
-            note: ['yellow', 'teal'],
-            gain: ['red', 'blue'],
-            filter: ['magenta', 'green']
-          };
-
-          const [backgroundColor, color, scale, valueString] = f(() => {
+          const [scale, valueString] = f(() => {
             if (column === selectedColumn) {
               const value = column.fromMouse(mouseY);
 
-              return [...colors[column.key], column.toMouse(value), column.toString(value)];
+              return [column.toMouse(value), column.toString(value)];
             } else {
-              return ["grey", "", 0, null];
+              return [0, null];
             }
           });
 
           return (
             <VerticalMeter
               key={index}
-              backgroundColor={backgroundColor}
-              color={color}
+              colors={column.colors[0]}
               scale={scale}
             >
               {column.label + (valueString ? ' ' + valueString : '')}
@@ -323,26 +311,44 @@ export default function KeySeq() {
         })}
       </div>
       <div className="absolute absolute--fill flex justify-center items-center">
-        {keyState.map(function (value, index) {
-          const scale = sequencerIndex === index ? '1.5' : '1';
+        <div className="flex box-shadow-1">
+          {keyState.map(function (value, index) {
+            const containerStyle = {
+              opacity: index === sequencerIndex ? '1' : '0.55',
+              width: '66px',
+              height: '66px',
+              willChange: 'opacity'
+            };
 
-          const style = {
-            willChange: 'opacity',
-            opacity: value ? '1' : '0.2',
-            transform: `scale3d(${scale}, ${scale}, 1)`,
-            transition: 'transform 173ms'
-          };
+            const y = value ? '10%' : '0';
 
-          return (
-            <div
-              key={index}
-              className="w2 h2 relative"
-              style={style}
-            >
-              <Cell label={index + 1} cell={sequence[index]} />
-            </div>
-          );
-        })}
+            const labelStyle = {
+              transform: `translate3d(0, ${y}, 0)`,
+              transition: 'transform 173ms',
+            };
+
+            const cellValue = selectedColumn.toMouse(sequence[index][selectedColumn.key]);
+
+            return (
+              <div
+                key={index}
+                className="relative flex overflow-hidden"
+                style={containerStyle}
+              >
+                <VerticalMeter
+                  colors={selectedColumn.colors[index % selectedColumn.colors.length]}
+                  scale={cellValue}
+                />
+                <div
+                  className="absolute absolute--fill flex justify-center items-center f4"
+                  style={labelStyle}
+                >
+                  {sequenceKeys[index]}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
       <div className="relative pa3 flex">
         <button
