@@ -9,12 +9,6 @@ const f = (callback) => callback();
 
 const inRange = (value, min, max) => Math.min(max, Math.max(min, value));
 
-const emptyCell = {
-  note: 0,
-  gain: 1,
-  filter: 1
-};
-
 const sequenceKeys = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
 const scale = [0, 2, 3, 5, 7, 8, 11]; // harmonic minor
@@ -48,6 +42,7 @@ const columns = [
   {
     label: 'Note',
     key: 'note',
+    defaultValue: 0,
     colors: generateColumnColors(0),
     fromMouse: y => Math.floor(y * (scale.length + 1)),
     toMouse: value => (value / scale.length),
@@ -56,6 +51,7 @@ const columns = [
   {
     label: 'Gain',
     key: 'gain',
+    defaultValue: 1,
     colors: generateColumnColors(1),
     fromMouse: y => y,
     toMouse: value => value,
@@ -64,12 +60,21 @@ const columns = [
   {
     label: 'Filter',
     key: 'filter',
+    defaultValue: 1,
     colors: generateColumnColors(2),
     fromMouse: y => y,
     toMouse: value => value,
     toString: numberToPercentageString
   }
 ];
+
+const emptyCell = f(() => {
+  const cell = {};
+
+  columns.forEach(column => cell[column.key] = column.defaultValue);
+
+  return cell;
+});
 
 function useWindowMouse() {
   const [position, setPosition] = useState([0, 0]);
