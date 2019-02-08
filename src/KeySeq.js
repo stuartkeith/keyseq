@@ -51,7 +51,7 @@ const columns = [
     colors: generateColumnColors(0),
     fromMouse: y => Math.floor(y * (scale.length + 1)),
     toMouse: value => (value / scale.length),
-    toString: value => value > 0 ? value.toString() : 'None'
+    toString: value => value > 0 ? value.toString() : '-'
   },
   {
     label: 'Gain',
@@ -242,6 +242,7 @@ export default function KeySeq() {
   const [mouseX, mouseY] = useWindowMouse();
 
   const selectedColumn = columns[Math.floor(mouseX * columns.length)];
+  const selectedColumnValue = selectedColumn.fromMouse(mouseY);
 
   useKeyboard(function (key, isDown) {
     const sequenceKeysIndex = sequenceKeys.indexOf(key);
@@ -252,7 +253,7 @@ export default function KeySeq() {
 
         const newCell = {
           ...cell,
-          [selectedColumn.key]: selectedColumn.fromMouse(mouseY)
+          [selectedColumn.key]: selectedColumnValue
         };
 
         // need to use function to access state
@@ -275,7 +276,7 @@ export default function KeySeq() {
       if (keyState[index]) {
         return {
           ...cell,
-          [selectedColumn.key]: selectedColumn.fromMouse(mouseY)
+          [selectedColumn.key]: selectedColumnValue
         };
       }
 
@@ -289,28 +290,22 @@ export default function KeySeq() {
     <div className="h-100 relative">
       <div className="absolute absolute--fill flex">
         {columns.map(function (column, index) {
-          const [scale, valueString] = f(() => {
-            if (column === selectedColumn) {
-              const value = column.fromMouse(mouseY);
-
-              return [column.toMouse(value), column.toString(value)];
-            } else {
-              return [0, null];
-            }
-          });
+          const scale = column === selectedColumn ? selectedColumn.toMouse(selectedColumnValue) : 0;
 
           return (
             <VerticalMeter
               key={index}
               colors={column.colors[0]}
               scale={scale}
-            >
-              {column.label + (valueString ? ' ' + valueString : '')}
-            </VerticalMeter>
+            />
           );
         })}
       </div>
-      <div className="absolute absolute--fill flex justify-center items-center">
+      <div className="absolute absolute--fill flex flex-column justify-center items-center">
+        <div className="dark-grey f3 tc">
+          <p className="ma0 mb2 dark-gray b">{selectedColumn.label}</p>
+          <p className="ma0 mb4 dark-gray">{selectedColumn.toString(selectedColumnValue)}</p>
+        </div>
         <div className="flex box-shadow-1">
           {keyState.map(function (value, index) {
             const containerStyle = {
