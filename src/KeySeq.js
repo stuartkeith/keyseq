@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { arraySetAt } from './utils/array';
+import { f } from './utils/f';
 import audioContext from './webaudio/audioContext';
 import Scheduler from './webaudio/Scheduler';
 import VisualScheduler from './webaudio/VisualScheduler';
-
-// alternative to using inline self-executing function
-const f = (callback) => callback();
 
 const inRange = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -146,7 +144,7 @@ function useKeyboard(callback, inputs) {
   }, inputs);
 }
 
-function useSequencer(isPlaying, sequence) {
+function useSequencer(isPlaying, sequence, destinationNode) {
   const schedulerInstance = useRef(null);
   const visualSchedulerInstance = useRef(null);
   const [index, setIndex] = useState(0);
@@ -197,7 +195,7 @@ function useSequencer(isPlaying, sequence) {
       // routing
       osc.connect(lowpassNode);
       lowpassNode.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      gainNode.connect(destinationNode);
     }
 
     visualScheduler.push(sequenceIndex, beatTimeOffset);
@@ -226,12 +224,11 @@ function VerticalMeter({ colors, scale, children }) {
       }}
     >
       <div
-        className="absolute absolute--fill"
+        className="absolute absolute--fill z-minus-1"
         style={{
           backgroundColor: colors.foreground,
           transform: `scale3d(1, ${scale}, 1)`,
-          transformOrigin: '100% 100%',
-          zIndex: -1
+          transformOrigin: '100% 100%'
         }}
       />
       {children}
@@ -239,11 +236,11 @@ function VerticalMeter({ colors, scale, children }) {
   );
 }
 
-export default function KeySeq() {
+export default function KeySeq({ destinationNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [sequence, setSequence] = useState(() => sequenceKeys.map(_ => emptyCell));
   const [keyState, setKeyState] = useState(() => sequenceKeys.map(_ => false));
-  const [sequencerIndex] = useSequencer(isPlaying, sequence);
+  const [sequencerIndex] = useSequencer(isPlaying, sequence, destinationNode);
   const [mouseX, mouseY] = useWindowMouse();
 
   const selectedColumn = columns[Math.floor(mouseX * columns.length)];
@@ -352,8 +349,7 @@ export default function KeySeq() {
       </div>
       <div className="relative pa3 flex">
         <button
-          className="input-reset dib bw0 w3 pa2"
-          style={{ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)' }}
+          className="input-reset bg-white dark-gray dib bw0 w3 pa2 box-shadow-1"
           onClick={() => setIsPlaying(!isPlaying)}
         >
             {isPlaying ? 'Stop' : 'Play'}
