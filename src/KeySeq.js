@@ -6,6 +6,8 @@ import audioContext from './webaudio/audioContext';
 import Scheduler from './webaudio/Scheduler';
 import VisualScheduler from './webaudio/VisualScheduler';
 
+const passThrough = value => value;
+
 const inRange = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const sequenceKeys = ['1', '2', '3', '4', '5', '6', '7', '8'];
@@ -52,8 +54,8 @@ const columns = [
     key: 'gain',
     defaultValue: 1,
     colors: generateColumnColors(1),
-    fromMouse: y => y,
-    toMouse: value => value,
+    fromMouse: passThrough,
+    toMouse: passThrough,
     toString: numberToPercentageString
   },
   {
@@ -61,8 +63,17 @@ const columns = [
     key: 'filter',
     defaultValue: 1,
     colors: generateColumnColors(2),
-    fromMouse: y => y,
-    toMouse: value => value,
+    fromMouse: passThrough,
+    toMouse: passThrough,
+    toString: numberToPercentageString
+  },
+  {
+    label: 'Decay',
+    key: 'decay',
+    defaultValue: 0.5,
+    colors: generateColumnColors(3),
+    fromMouse: passThrough,
+    toMouse: passThrough,
     toString: numberToPercentageString
   }
 ];
@@ -172,11 +183,15 @@ function useSequencer(isPlaying, sequence, destinationNode) {
       lowpassNode.type = 'lowpass';
       lowpassNode.frequency.value = filterLogScale;
 
+      const noteTime = 0.1  + (cell.decay * 2);
+
       const gainNode = audioContext.createGain();
-      gainNode.gain.value = Math.pow(cell.gain, 1.6);
+
+      gainNode.gain.setValueAtTime(Math.pow(cell.gain, 1.6), beatTimeOffset);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, beatTimeOffset + noteTime);
 
       osc.start(beatTimeOffset);
-      osc.stop(beatTime + (beatLength * 0.9));
+      osc.stop(beatTimeOffset + noteTime);
 
       // routing
       osc.connect(lowpassNode);
