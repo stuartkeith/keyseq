@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useRefLazy } from './effects/useRefLazy';
 import { arraySetAt } from './utils/array';
 import { f } from './utils/f';
 import audioContext from './webaudio/audioContext';
@@ -96,12 +97,7 @@ function useWindowMouse() {
 }
 
 function useKeyboard(callback, inputs) {
-  const stateRef = useRef(null);
-
-  if (stateRef.current === null) {
-    stateRef.current = {};
-  }
-
+  const stateRef = useRef({});
   const state = stateRef.current;
 
   useEffect(function () {
@@ -145,20 +141,10 @@ function useKeyboard(callback, inputs) {
 }
 
 function useSequencer(isPlaying, sequence, destinationNode) {
-  const schedulerInstance = useRef(null);
-  const visualSchedulerInstance = useRef(null);
   const [index, setIndex] = useState(0);
 
-  if (schedulerInstance.current === null) {
-    schedulerInstance.current = new Scheduler(96);
-  }
-
-  if (visualSchedulerInstance.current === null) {
-    visualSchedulerInstance.current = new VisualScheduler();
-  }
-
-  const scheduler = schedulerInstance.current;
-  const visualScheduler = visualSchedulerInstance.current;
+  const scheduler = useRefLazy(() => new Scheduler(96));
+  const visualScheduler = useRefLazy(() => new VisualScheduler());
 
   scheduler.callback = function (beatTime, beatLength, index) {
     const sequenceIndex = index % sequence.length;
