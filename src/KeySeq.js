@@ -45,8 +45,8 @@ const columns = [
     key: 'note',
     defaultValue: 0,
     colors: generateColumnColors(0),
-    fromMouse: y => Math.floor(y * (scale.length + 1)),
-    toMouse: value => (value / scale.length),
+    denormalise: y => Math.floor(y * (scale.length + 1)),
+    normalise: value => (value / scale.length),
     toString: value => value > 0 ? value.toString() : '-'
   },
   {
@@ -54,8 +54,8 @@ const columns = [
     key: 'gain',
     defaultValue: 1,
     colors: generateColumnColors(1),
-    fromMouse: passThrough,
-    toMouse: passThrough,
+    denormalise: passThrough,
+    normalise: passThrough,
     toString: numberToPercentageString
   },
   {
@@ -63,8 +63,8 @@ const columns = [
     key: 'filter',
     defaultValue: 1,
     colors: generateColumnColors(2),
-    fromMouse: passThrough,
-    toMouse: passThrough,
+    denormalise: passThrough,
+    normalise: passThrough,
     toString: numberToPercentageString
   },
   {
@@ -72,8 +72,8 @@ const columns = [
     key: 'decay',
     defaultValue: 0.5,
     colors: generateColumnColors(3),
-    fromMouse: passThrough,
-    toMouse: passThrough,
+    denormalise: passThrough,
+    normalise: passThrough,
     toString: numberToPercentageString
   }
 ];
@@ -246,7 +246,7 @@ export default function KeySeq({ destinationNode }) {
 
   const selectedColumnIndex = inRange(Math.floor(mouseX * columns.length), 0, columns.length - 1);
   const selectedColumn = columns[selectedColumnIndex];
-  const selectedColumnValue = selectedColumn.fromMouse(mouseY);
+  const selectedColumnValue = selectedColumn.denormalise(mouseY);
 
   useKeyboard(function (key, isDown) {
     const sequenceKeysIndex = sequenceKeys.indexOf(key);
@@ -294,7 +294,7 @@ export default function KeySeq({ destinationNode }) {
     <div className="h-100 relative">
       <div className="absolute absolute--fill flex">
         {columns.map(function (column, index) {
-          const scale = column === selectedColumn ? selectedColumn.toMouse(selectedColumnValue) : 0;
+          const scale = column === selectedColumn ? selectedColumn.normalise(selectedColumnValue) : 0;
 
           return (
             <VerticalMeter
@@ -326,7 +326,7 @@ export default function KeySeq({ destinationNode }) {
               transition: 'transform 173ms',
             };
 
-            const cellValue = selectedColumn.toMouse(sequence[index][selectedColumn.key]);
+            const cellValue = selectedColumn.normalise(sequence[index][selectedColumn.key]);
 
             return (
               <div
