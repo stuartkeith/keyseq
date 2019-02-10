@@ -228,7 +228,7 @@ function useSequencer(isPlaying, sequence, destinationNode) {
       lowpassNode.type = 'lowpass';
       lowpassNode.frequency.value = filterLogScale;
 
-      const noteTime = 0.1  + (cell.decay * 2);
+      const noteTime = 0.1 + (cell.decay * 3);
 
       const gainNode = audioContext.createGain();
 
