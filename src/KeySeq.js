@@ -310,7 +310,7 @@ export default function KeySeq({ destinationNode }) {
         });
       }
     }
-  }, [state.keyState, mouseY, selectedColumn, state.sequence]);
+  }, [sequenceKeys, state, dispatch, selectedColumn, selectedColumnValue]);
 
   // mouse move
   useEffect(function () {
