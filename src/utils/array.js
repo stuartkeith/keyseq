@@ -5,3 +5,7 @@ export function arraySetAt(array, index, value) {
 
   return newArray;
 }
+
+export function arrayReplaceAt(array, index, callback) {
+  return arraySetAt(array, index, callback(array[index]));
+}

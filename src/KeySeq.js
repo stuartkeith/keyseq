@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useRefLazy } from './effects/useRefLazy';
-import { arraySetAt } from './utils/array';
+import { arrayReplaceAt, arraySetAt } from './utils/array';
 import { f } from './utils/f';
 import audioContext from './webaudio/audioContext';
 import Scheduler from './webaudio/Scheduler';
@@ -85,6 +85,51 @@ const emptyCell = f(() => {
 
   return cell;
 });
+
+const initialState = {
+  keyState: sequenceKeys.map(_ => false),
+  sequence: sequenceKeys.map(_ => emptyCell)
+};
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'keyDown':
+      return {
+        ...state,
+        keyState: arraySetAt(state.keyState, action.sequenceKeysIndex, true),
+        sequence: arrayReplaceAt(state.sequence, action.sequenceKeysIndex, cell => ({
+          ...cell,
+          [action.selectedColumn.key]: action.selectedColumnValue
+        }))
+      };
+    case 'keyUp':
+      return {
+        ...state,
+        keyState: arraySetAt(state.keyState, action.sequenceKeysIndex, false)
+      };
+    case 'mouseMove':
+      // no need to process if no keys held down
+      if (!state.keyState.find(x => x)) {
+        return state;
+      }
+
+      return {
+        ...state,
+        sequence: state.sequence.map((cell, index) => {
+          if (!state.keyState[index]) {
+            return cell;
+          }
+
+          return {
+            ...cell,
+            [action.selectedColumn.key]: action.selectedColumnValue
+          }
+        })
+      }
+    default:
+      throw new Error();
+  }
+}
 
 function useWindowMouse() {
   const [position, setPosition] = useState([0, 0]);
@@ -239,9 +284,8 @@ function VerticalMeter({ colors, scale, children }) {
 
 export default function KeySeq({ destinationNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [sequence, setSequence] = useState(() => sequenceKeys.map(_ => emptyCell));
-  const [keyState, setKeyState] = useState(() => sequenceKeys.map(_ => false));
-  const [sequencerIndex] = useSequencer(isPlaying, sequence, destinationNode);
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const [sequencerIndex] = useSequencer(isPlaying, state.sequence, destinationNode);
   const [mouseX, mouseY] = useWindowMouse();
 
   const selectedColumnIndex = inRange(Math.floor(mouseX * columns.length), 0, columns.length - 1);
@@ -253,41 +297,28 @@ export default function KeySeq({ destinationNode }) {
 
     if (sequenceKeysIndex >= 0) {
       if (isDown) {
-        const cell = sequence[sequenceKeysIndex];
-
-        const newCell = {
-          ...cell,
-          [selectedColumn.key]: selectedColumnValue
-        };
-
-        // need to use function to access state
-        // see https://github.com/facebook/react/issues/14750
-        setKeyState(keyState => arraySetAt(keyState, sequenceKeysIndex, true));
-        setSequence(sequence => arraySetAt(sequence, sequenceKeysIndex, newCell));
+        dispatch({
+          type: 'keyDown',
+          sequenceKeysIndex,
+          selectedColumn,
+          selectedColumnValue
+        });
       } else {
-        setKeyState(keyState => arraySetAt(keyState, sequenceKeysIndex, false));
+        dispatch({
+          type: 'keyUp',
+          sequenceKeysIndex
+        });
       }
     }
-  }, [keyState, mouseY, selectedColumn, sequence]);
+  }, [state.keyState, mouseY, selectedColumn, state.sequence]);
 
   // mouse move
   useEffect(function () {
-    if (!keyState.find(x => x)) {
-      return;
-    }
-
-    const newSequence = sequence.map(function (cell, index) {
-      if (keyState[index]) {
-        return {
-          ...cell,
-          [selectedColumn.key]: selectedColumnValue
-        };
-      }
-
-      return cell;
+    dispatch({
+      type: 'mouseMove',
+      selectedColumn,
+      selectedColumnValue
     });
-
-    setSequence(newSequence);
   }, [mouseX, mouseY]);
 
   return (
@@ -311,7 +342,7 @@ export default function KeySeq({ destinationNode }) {
           <p className="ma0 mb4 dark-gray">{selectedColumn.toString(selectedColumnValue)}</p>
         </div>
         <div className="flex box-shadow-1">
-          {keyState.map(function (value, index) {
+          {state.keyState.map(function (value, index) {
             const containerStyle = {
               opacity: index === sequencerIndex ? '1' : '0.55',
               width: '66px',
@@ -326,7 +357,7 @@ export default function KeySeq({ destinationNode }) {
               transition: 'transform 173ms',
             };
 
-            const cellValue = selectedColumn.normalise(sequence[index][selectedColumn.key]);
+            const cellValue = selectedColumn.normalise(state.sequence[index][selectedColumn.key]);
 
             return (
               <div
