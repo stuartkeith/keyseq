@@ -244,7 +244,8 @@ export default function KeySeq({ destinationNode }) {
   const [sequencerIndex] = useSequencer(isPlaying, sequence, destinationNode);
   const [mouseX, mouseY] = useWindowMouse();
 
-  const selectedColumn = columns[Math.floor(mouseX * columns.length)];
+  const selectedColumnIndex = inRange(Math.floor(mouseX * columns.length), 0, columns.length - 1);
+  const selectedColumn = columns[selectedColumnIndex];
   const selectedColumnValue = selectedColumn.fromMouse(mouseY);
 
   useKeyboard(function (key, isDown) {
