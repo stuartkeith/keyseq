@@ -478,9 +478,9 @@ export default function KeySeq({ destinationNode }) {
         })}
       </div>
       <div className="absolute absolute--fill flex flex-column justify-center items-center">
-        <div className="dark-grey f3 tc">
-          <p className="ma0 mb2 dark-gray b">{selectedColumn.label}</p>
-          <p className="ma0 mb4 dark-gray">{selectedColumn.toString(selectedColumnValue)}</p>
+        <div className="f3 tc dark-gray">
+          <p className="ma0 mb2 b">{selectedColumn.label}</p>
+          <p className="ma0 mb4">{selectedColumn.toString(selectedColumnValue)}</p>
         </div>
         <div className="flex box-shadow-1">
           {state.keyState.map(function (value, index) {
