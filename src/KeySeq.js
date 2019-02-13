@@ -60,11 +60,28 @@ function arrayColumn(defaultIndex, array, toString) {
   };
 }
 
+function numberColumn(defaultValue, minValue, maxValue, toString) {
+  const range = maxValue - minValue;
+
+  return {
+    defaultValue,
+    denormalise: (normalisedValue) => {
+      return minValue + (range * normalisedValue);
+    },
+    normalise: (value) => {
+      return (value - minValue) / range;
+    },
+    toString
+  };
+}
+
+let colorIndex = 0;
+
 const columns = [
   {
     label: 'Note',
     key: 'note',
-    colors: generateColumnColors(0),
+    colors: generateColumnColors(colorIndex++),
     // harmonic minor scale:
     ...arrayColumn(
       0,
@@ -75,17 +92,14 @@ const columns = [
   {
     label: 'Gain',
     key: 'gain',
-    defaultValue: 1,
-    colors: generateColumnColors(1),
-    denormalise: passThrough,
-    normalise: passThrough,
-    toString: numberToPercentageString
+    colors: generateColumnColors(colorIndex++),
+    ...numberColumn(1, 0.4, 1, numberToPercentageString)
   },
   {
     label: 'Filter',
     key: 'filter',
     defaultValue: 1,
-    colors: generateColumnColors(2),
+    colors: generateColumnColors(colorIndex++),
     denormalise: passThrough,
     normalise: passThrough,
     toString: numberToPercentageString
@@ -94,7 +108,7 @@ const columns = [
     label: 'Decay',
     key: 'decay',
     defaultValue: 0.5,
-    colors: generateColumnColors(3),
+    colors: generateColumnColors(colorIndex++),
     denormalise: passThrough,
     normalise: passThrough,
     toString: numberToPercentageString
@@ -102,7 +116,7 @@ const columns = [
   {
     label: 'Waveform',
     key: 'waveform',
-    colors: generateColumnColors(4),
+    colors: generateColumnColors(colorIndex++),
     ...arrayColumn(
       0,
       ['sawtooth', 'square', 'sine'],
