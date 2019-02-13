@@ -98,6 +98,16 @@ const columns = [
     denormalise: passThrough,
     normalise: passThrough,
     toString: numberToPercentageString
+  },
+  {
+    label: 'Waveform',
+    key: 'waveform',
+    colors: generateColumnColors(4),
+    ...arrayColumn(
+      0,
+      ['sawtooth', 'square', 'sine'],
+      passThrough
+    )
   }
 ];
 
@@ -258,7 +268,7 @@ function useSequencer(isPlaying, sequence, destinationNode) {
 
       // create nodes
       const osc = audioContext.createOscillator();
-      osc.type = 'square';
+      osc.type = cell.waveform;
       osc.frequency.value = frequency;
 
       const filterMin = 100;
