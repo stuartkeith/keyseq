@@ -105,6 +105,15 @@ const columns = [
     toString: numberToPercentageString
   },
   {
+    label: 'Resonance',
+    key: 'resonance',
+    defaultValue: 0,
+    colors: generateColumnColors(colorIndex++),
+    denormalise: passThrough,
+    normalise: passThrough,
+    toString: numberToPercentageString
+  },
+  {
     label: 'Decay',
     key: 'decay',
     defaultValue: 0.5,
@@ -294,6 +303,7 @@ function useSequencer(isPlaying, sequence, destinationNode) {
       const lowpassNode = audioContext.createBiquadFilter();
       lowpassNode.type = 'lowpass';
       lowpassNode.frequency.value = filterLogScale;
+      lowpassNode.Q.value = cell.resonance * 30;
 
       const noteTime = 0.1 + (cell.decay * 3);
 
