@@ -12,8 +12,6 @@ const inRange = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const sequenceKeys = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
-const scale = [0, 2, 3, 5, 7, 8, 11]; // harmonic minor
-
 function numberToPercentageString(number) {
   return `${Math.floor(number * 100)}%`;
 }
@@ -39,15 +37,40 @@ function generateColumnColors(index) {
   ];
 }
 
+function arrayColumn(defaultIndex, array, toString) {
+  return {
+    defaultValue: array[defaultIndex],
+    denormalise: (normalisedValue) => {
+      // convert 0 to 1 to array value
+      const arrayIndex = inRange(Math.floor(normalisedValue * array.length), 0, array.length - 1);
+
+      return array[arrayIndex];
+    },
+    normalise: (value) => {
+      // convert value in array to 0 to 1
+      const index = array.indexOf(value);
+
+      if (index < 0) {
+        throw new Error('Invalid cell value');
+      }
+
+      return (index + 1) / array.length;
+    },
+    toString: (value) => toString(value, array)
+  };
+}
+
 const columns = [
   {
     label: 'Note',
     key: 'note',
-    defaultValue: 0,
     colors: generateColumnColors(0),
-    denormalise: y => Math.floor(y * (scale.length + 1)),
-    normalise: value => (value / scale.length),
-    toString: value => value > 0 ? value.toString() : '-'
+    // harmonic minor scale:
+    ...arrayColumn(
+      0,
+      [null, 0, 2, 3, 5, 7, 8, 11],
+      (value, array) => value === null ? '-' : array.indexOf(value).toString()
+    )
   },
   {
     label: 'Gain',
@@ -228,9 +251,8 @@ function useSequencer(isPlaying, sequence, destinationNode) {
     const cell = sequence[sequenceIndex];
     const beatTimeOffset = beatTime + (sequenceIndex % 2 ? 0 : beatLength * 0.3);
 
-    if (cell.note > 0 && cell.gain > 0) {
-      const scaleIndex = cell.note - 1;
-      const scaleNote = scale[scaleIndex] - 12;
+    if (cell.note !== null && cell.gain > 0) {
+      const scaleNote = cell.note - 12;
 
       const frequency = 440 * Math.pow(2, scaleNote / 12);
 
