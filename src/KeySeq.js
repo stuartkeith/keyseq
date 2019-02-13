@@ -96,8 +96,8 @@ const columns = [
     ...numberColumn(1, 0.4, 1, numberToPercentageString)
   },
   {
-    label: 'Filter',
-    key: 'filter',
+    label: 'Filter Frequency',
+    key: 'filterFrequency',
     defaultValue: 1,
     colors: generateColumnColors(colorIndex++),
     denormalise: passThrough,
@@ -105,8 +105,26 @@ const columns = [
     toString: numberToPercentageString
   },
   {
-    label: 'Resonance',
-    key: 'resonance',
+    label: 'Filter Resonance',
+    key: 'filterResonance',
+    defaultValue: 0,
+    colors: generateColumnColors(colorIndex++),
+    denormalise: passThrough,
+    normalise: passThrough,
+    toString: numberToPercentageString
+  },
+  {
+    label: 'LFO Frequency',
+    key: 'lfoFrequency',
+    defaultValue: 0,
+    colors: generateColumnColors(colorIndex++),
+    denormalise: passThrough,
+    normalise: passThrough,
+    toString: numberToPercentageString
+  },
+  {
+    label: 'LFO Gain',
+    key: 'lfoGain',
     defaultValue: 0,
     colors: generateColumnColors(colorIndex++),
     denormalise: passThrough,
@@ -298,12 +316,12 @@ function useSequencer(isPlaying, sequence, destinationNode) {
       const filterMax = 22000;
       const filterRange = filterMax - filterMin;
       const filterLog = Math.log2(filterMax / filterMin);
-      const filterLogScale = filterMin + (filterRange * Math.pow(2, filterLog * (cell.filter - 1)));
+      const filterLogScale = filterMin + (filterRange * Math.pow(2, filterLog * (cell.filterFrequency - 1)));
 
       const lowpassNode = audioContext.createBiquadFilter();
       lowpassNode.type = 'lowpass';
       lowpassNode.frequency.value = filterLogScale;
-      lowpassNode.Q.value = cell.resonance * 30;
+      lowpassNode.Q.value = cell.filterResonance * 30;
 
       const noteTime = 0.1 + (cell.decay * 3);
 
@@ -312,10 +330,22 @@ function useSequencer(isPlaying, sequence, destinationNode) {
       gainNode.gain.setValueAtTime(Math.pow(cell.gain, 1.6), beatTimeOffset);
       gainNode.gain.exponentialRampToValueAtTime(0.0001, beatTimeOffset + noteTime);
 
+      const lfo = audioContext.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = cell.lfoFrequency * 17;
+
+      const lfoGain = audioContext.createGain();
+      lfoGain.gain.value = cell.lfoGain * 25;
+
       osc.start(beatTimeOffset);
       osc.stop(beatTimeOffset + noteTime);
 
+      lfo.start(beatTimeOffset);
+      lfo.stop(beatTimeOffset + noteTime);
+
       // routing
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
       osc.connect(lowpassNode);
       lowpassNode.connect(gainNode);
       gainNode.connect(destinationNode);
