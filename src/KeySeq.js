@@ -1,6 +1,6 @@
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useRefLazy } from './effects/useRefLazy';
-import { arrayReplaceAt, arraySetAt } from './utils/array';
+import { arrayReplaceAt, arraySetAt, arrayShiftBy } from './utils/array';
 import { f } from './utils/f';
 import audioContext from './webaudio/audioContext';
 import Scheduler from './webaudio/Scheduler';
@@ -126,6 +126,27 @@ function reducer(state, action) {
           }
         })
       }
+    case 'shiftSequence':
+      return {
+        ...state,
+        sequence: arrayShiftBy(state.sequence, action.direction)
+      };
+    case 'randomiseSequence':
+      const anyKeysAreDown = !!state.keyState.find(x => x);
+
+      return {
+        ...state,
+        sequence: state.sequence.map((cell, index) => {
+          if (anyKeysAreDown && !state.keyState[index]) {
+            return cell;
+          }
+
+          return {
+            ...cell,
+            [action.selectedColumn.key]: action.selectedColumn.denormalise(Math.random())
+          };
+        })
+      };
     default:
       throw new Error();
   }
@@ -309,6 +330,40 @@ export default function KeySeq({ destinationNode }) {
           sequenceKeysIndex
         });
       }
+
+      return;
+    }
+
+    const direction = f(() => {
+      if (isDown) {
+        if (key === 'ArrowLeft') {
+          return -1;
+        }
+
+        if (key === 'ArrowRight') {
+          return 1;
+        }
+      }
+
+      return 0;
+    });
+
+    if (direction !== 0) {
+      dispatch({
+        type: 'shiftSequence',
+        direction
+      });
+
+      return;
+    }
+
+    if (isDown && (key === 'ArrowUp' || key === 'ArrowDown')) {
+      dispatch({
+        type: 'randomiseSequence',
+        selectedColumn
+      });
+
+      return;
     }
   }, [sequenceKeys, state, dispatch, selectedColumn, selectedColumnValue]);
 
