@@ -61,6 +61,21 @@ function arrayColumn(defaultIndex, array, toString) {
   };
 }
 
+function integerColumn(defaultValue, minValue, maxValue, toString) {
+  const range = (maxValue - minValue) + 1;
+
+  return {
+    defaultValue,
+    denormalise: (normalisedValue) => {
+      return inRange(minValue + Math.floor(normalisedValue * range), minValue, maxValue);
+    },
+    normalise: (value) => {
+      return (value - minValue + 1) / range;
+    },
+    toString
+  };
+}
+
 function numberColumn(defaultValue, minValue, maxValue, toString) {
   const range = maxValue - minValue;
 
@@ -89,6 +104,12 @@ const columns = [
       [null, 0, 2, 3, 5, 7, 8, 11],
       (value, array) => value === null ? '-' : array.indexOf(value).toString()
     )
+  },
+  {
+    label: 'Octave',
+    key: 'octave',
+    colors: generateColumnColors(colorIndex++),
+    ...integerColumn(0, -2, 2, passThrough)
   },
   {
     label: 'Gain',
@@ -321,9 +342,9 @@ function useSequencer(isPlaying, sequence, destinationNode) {
     const beatTimeOffset = beatTime + (sequenceIndex % 2 ? 0 : beatLength * 0.3);
 
     if (cell.note !== null && cell.gain > 0) {
-      const scaleNote = cell.note - 12;
+      const scaleNote = cell.note + (cell.octave * 12) - 12;
 
-      const frequency = 440 * Math.pow(2, scaleNote / 12);
+      const frequency = 440 * Math.pow(2, (scaleNote + 3) / 12);
 
       // create nodes
       const osc = audioContext.createOscillator();
