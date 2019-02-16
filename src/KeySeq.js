@@ -1,5 +1,6 @@
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useRefLazy } from './effects/useRefLazy';
+import { useViewport } from './effects/useViewport';
 import { arrayReplaceAt, arraySetAt, arrayShiftBy } from './utils/array';
 import { f } from './utils/f';
 import audioContext from './webaudio/audioContext';
@@ -226,15 +227,32 @@ function reducer(state, action) {
   }
 }
 
-function useWindowMouse() {
+function useMouse(elementRef, viewportDimensions) {
   const [position, setPosition] = useState([0, 0]);
+  const elementOffset = useRef();
+
+  useEffect(function () {
+    const boundingClientRect = elementRef.current.getBoundingClientRect();
+
+    elementOffset.current = [
+      boundingClientRect.left + window.pageXOffset,
+      boundingClientRect.top + window.pageYOffset,
+      boundingClientRect.width,
+      boundingClientRect.height
+    ];
+  }, [viewportDimensions]);
 
   useEffect(function () {
     const onMouseMove = function (event) {
-      const x = inRange(event.pageX / window.innerWidth, 0, 1);
-      const y = inRange(1 - (event.pageY / window.innerHeight), 0, 1);
+      const [elementX, elementY, elementWidth, elementHeight] = elementOffset.current;
 
-      setPosition([x, y]);
+      const offsetX = event.pageX - elementX;
+      const offsetY = event.pageY - elementY;
+
+      const x = inRange(offsetX / elementWidth, 0, 1);
+      const y = inRange(offsetY / elementHeight, 0, 1);
+
+      setPosition([x, 1 - y]);
     };
 
     window.addEventListener('mousemove', onMouseMove);
@@ -390,10 +408,12 @@ function VerticalMeter({ colors, scale, children }) {
 }
 
 export default function KeySeq({ destinationNode }) {
+  const viewportDimensions = useViewport();
   const [isPlaying, setIsPlaying] = useState(false);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [sequencerIndex] = useSequencer(isPlaying, state.sequence, destinationNode);
-  const [mouseX, mouseY] = useWindowMouse();
+  const mouseRef = useRef();
+  const [mouseX, mouseY] = useMouse(mouseRef, viewportDimensions);
 
   const selectedColumnIndex = inRange(Math.floor(mouseX * columns.length), 0, columns.length - 1);
   const selectedColumn = columns[selectedColumnIndex];
@@ -463,8 +483,8 @@ export default function KeySeq({ destinationNode }) {
   }, [mouseX, mouseY]);
 
   return (
-    <div className="h-100 relative">
-      <div className="absolute absolute--fill flex">
+    <div className="h-100 relative bg-dark-gray">
+      <div className="absolute absolute--fill flex mv4" ref={mouseRef}>
         {columns.map(function (column, index) {
           const scale = column === selectedColumn ? selectedColumn.normalise(selectedColumnValue) : 0;
 
