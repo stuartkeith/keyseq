@@ -254,7 +254,7 @@ function reducer(state, action) {
         })
       };
     default:
-      throw new Error();
+      throw new Error('Unrecognised action type - ' + action.type);
   }
 }
 
