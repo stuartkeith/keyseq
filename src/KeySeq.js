@@ -1,7 +1,7 @@
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useRefLazy } from './effects/useRefLazy';
 import { useViewport } from './effects/useViewport';
-import { arrayReplaceAt, arraySetAt, arrayShiftBy } from './utils/array';
+import { arrayReplaceAt, arraySetAt } from './utils/array';
 import { f } from './utils/f';
 import audioContext from './webaudio/audioContext';
 import Scheduler from './webaudio/Scheduler';
@@ -223,10 +223,20 @@ function reducer(state, action) {
         })
       }
     case 'shiftSequence':
+      const boundOffset = Math.abs(action.direction) % state.sequence.length;
+      const startIndex = action.direction < 0 ? boundOffset : state.sequence.length - boundOffset;
+
       return {
         ...state,
-        sequence: arrayShiftBy(state.sequence, action.direction)
-      };
+        sequence: state.sequence.map(function (cell, index) {
+          const targetIndex = (index + startIndex) % state.sequence.length;
+
+          return {
+            ...cell,
+            [action.selectedColumn.key]: state.sequence[targetIndex][action.selectedColumn.key]
+          };
+        })
+      }
     case 'randomiseSequence':
       const anyKeysAreDown = !!state.keyState.find(x => x);
 
@@ -478,6 +488,7 @@ export default function KeySeq({ destinationNode }) {
     if (direction !== 0) {
       dispatch({
         type: 'shiftSequence',
+        selectedColumn,
         direction
       });
 
