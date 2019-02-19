@@ -3,6 +3,7 @@ import { useRefLazy } from './effects/useRefLazy';
 import { useViewport } from './effects/useViewport';
 import { arrayReplaceAt, arraySetAt } from './utils/array';
 import { f } from './utils/f';
+import * as stack from './utils/stack';
 import audioContext from './webaudio/audioContext';
 import Scheduler from './webaudio/Scheduler';
 import VisualScheduler from './webaudio/VisualScheduler';
@@ -184,24 +185,40 @@ const emptyCell = f(() => {
 
 const initialState = {
   keyState: sequenceKeys.map(_ => false),
-  sequence: sequenceKeys.map(_ => emptyCell)
+  sequence: sequenceKeys.map(_ => emptyCell),
+  sequenceBeforeCurrentEdit: null,
+  undoStack: stack.create(32)
 };
+
+function getKeyCount(keyState) {
+  return keyState.reduce((count, value) => count + (value ? 1 : 0), 0);
+}
 
 function reducer(state, action) {
   switch (action.type) {
     case 'keyDown':
+      const newKeyDownState = arraySetAt(state.keyState, action.sequenceKeysIndex, true);
+      const isFirstKeyDown = getKeyCount(state.keyState) === 0 && getKeyCount(newKeyDownState) === 1;
+      const sequenceBeforeCurrentEdit = isFirstKeyDown ? state.sequence : state.sequenceBeforeCurrentEdit;
+
       return {
         ...state,
-        keyState: arraySetAt(state.keyState, action.sequenceKeysIndex, true),
+        keyState: newKeyDownState,
         sequence: arrayReplaceAt(state.sequence, action.sequenceKeysIndex, cell => ({
           ...cell,
           [action.selectedColumn.key]: action.selectedColumnValue
-        }))
+        })),
+        sequenceBeforeCurrentEdit
       };
     case 'keyUp':
+      const newKeyUpState = arraySetAt(state.keyState, action.sequenceKeysIndex, false);
+      const isLastKeyUp = getKeyCount(state.keyState) > 0 && getKeyCount(newKeyUpState) === 0;
+      const undoStack = isLastKeyUp ? stack.push(state.undoStack, state.sequenceBeforeCurrentEdit) : state.undoStack;
+
       return {
         ...state,
-        keyState: arraySetAt(state.keyState, action.sequenceKeysIndex, false)
+        keyState: newKeyUpState,
+        undoStack
       };
     case 'mouseMove':
       // no need to process if no keys held down
@@ -235,7 +252,8 @@ function reducer(state, action) {
             ...cell,
             [action.selectedColumn.key]: state.sequence[targetIndex][action.selectedColumn.key]
           };
-        })
+        }),
+        undoStack: stack.push(state.undoStack, state.sequence)
       }
     case 'randomiseSequence':
       const anyKeysAreDown = !!state.keyState.find(x => x);
@@ -251,7 +269,18 @@ function reducer(state, action) {
             ...cell,
             [action.selectedColumn.key]: action.selectedColumn.denormalise(Math.random())
           };
-        })
+        }),
+        undoStack: stack.push(state.undoStack, state.sequence)
+      };
+    case 'popUndo':
+      if (stack.isEmpty(state.undoStack)) {
+        return state;
+      }
+
+      return {
+        ...state,
+        sequence: stack.read(state.undoStack),
+        undoStack: stack.pop(state.undoStack)
       };
     default:
       throw new Error('Unrecognised action type - ' + action.type);
@@ -442,12 +471,30 @@ function VerticalMeter({ colors, scale, children }) {
   );
 }
 
+function Button({ disabled, onClick, children }) {
+  const className = `
+    input-reset bg-white dark-gray dib bw0 w3 pa2 box-shadow-1 flex-none
+    ${disabled ? 'moon-gray' : 'dark-gray'}
+  `;
+
+  return (
+    <button
+      className={className}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function KeySeq({ destinationNode }) {
-  const viewportDimensions = useViewport();
   const [isPlaying, setIsPlaying] = useState(false);
   const [state, dispatch] = useReducer(reducer, initialState);
   const [sequencerIndex] = useSequencer(isPlaying, state.sequence, destinationNode);
+
   const mouseRef = useRef();
+  const viewportDimensions = useViewport();
   const [mouseX, mouseY] = useMouse(mouseRef, viewportDimensions);
 
   const selectedColumnIndex = inRange(Math.floor(mouseX * columns.length), 0, columns.length - 1);
@@ -578,12 +625,18 @@ export default function KeySeq({ destinationNode }) {
         </div>
       </div>
       <div className="relative pa3 flex">
-        <button
-          className="input-reset bg-white dark-gray dib bw0 w3 pa2 box-shadow-1"
+        <Button
           onClick={() => setIsPlaying(!isPlaying)}
         >
             {isPlaying ? 'Stop' : 'Play'}
-        </button>
+        </Button>
+        <span className="dib w1 flex-none" />
+        <Button
+          disabled={stack.isEmpty(state.undoStack)}
+          onClick={() => dispatch({ type: 'popUndo' })}
+        >
+            Undo
+        </Button>
       </div>
     </div>
   );
