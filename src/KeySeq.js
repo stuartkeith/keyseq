@@ -1,6 +1,7 @@
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useRefLazy } from './effects/useRefLazy';
 import { useViewport } from './effects/useViewport';
+import { arrayReplaceAt, arraySetAt } from './utils/array';
 import { f } from './utils/f';
 import * as stack from './utils/stack';
 import audioContext from './webaudio/audioContext';
@@ -193,48 +194,24 @@ function getKeyCount(keyState) {
   return keyState.reduce((count, value) => count + (value ? 1 : 0), 0);
 }
 
-function getKeyStateWithKeys(keyState, keys, value) {
-  const newKeyState = keyState.slice();
-
-  keys.forEach(function (key) {
-    const index = sequenceKeys.indexOf(key);
-
-    if (index >= 0) {
-      newKeyState[index] = value;
-    }
-  });
-
-  return newKeyState;
-}
-
-function transformSequenceByKeyState(sequence, keyState, cellKey, cellValue) {
-  return sequence.map(function (cell, index) {
-    if (keyState[index] === false) {
-      return cell;
-    }
-
-    return {
-      ...cell,
-      [cellKey]: cellValue
-    };
-  });
-}
-
 function reducer(state, action) {
   switch (action.type) {
-    case 'keysDown':
-      const newKeyDownState = getKeyStateWithKeys(state.keyState, action.keys, true);
-      const isFirstKeyDown = getKeyCount(state.keyState) === 0 && getKeyCount(newKeyDownState) > 0;
+    case 'keyDown':
+      const newKeyDownState = arraySetAt(state.keyState, action.sequenceKeysIndex, true);
+      const isFirstKeyDown = getKeyCount(state.keyState) === 0 && getKeyCount(newKeyDownState) === 1;
       const sequenceBeforeCurrentEdit = isFirstKeyDown ? state.sequence : state.sequenceBeforeCurrentEdit;
 
       return {
         ...state,
         keyState: newKeyDownState,
-        sequence: transformSequenceByKeyState(state.sequence, newKeyDownState, action.selectedColumn.key, action.selectedColumnValue),
+        sequence: arrayReplaceAt(state.sequence, action.sequenceKeysIndex, cell => ({
+          ...cell,
+          [action.selectedColumn.key]: action.selectedColumnValue
+        })),
         sequenceBeforeCurrentEdit
       };
-    case 'keysUp':
-      const newKeyUpState = getKeyStateWithKeys(state.keyState, action.keys, false);
+    case 'keyUp':
+      const newKeyUpState = arraySetAt(state.keyState, action.sequenceKeysIndex, false);
       const isLastKeyUp = getKeyCount(state.keyState) > 0 && getKeyCount(newKeyUpState) === 0;
       const undoStack = isLastKeyUp ? stack.push(state.undoStack, state.sequenceBeforeCurrentEdit) : state.undoStack;
 
@@ -251,8 +228,17 @@ function reducer(state, action) {
 
       return {
         ...state,
-        sequence: transformSequenceByKeyState(state.sequence, state.keyState, action.selectedColumn.key, action.selectedColumnValue)
-      };
+        sequence: state.sequence.map((cell, index) => {
+          if (!state.keyState[index]) {
+            return cell;
+          }
+
+          return {
+            ...cell,
+            [action.selectedColumn.key]: action.selectedColumnValue
+          }
+        })
+      }
     case 'shiftSequence':
       const boundOffset = Math.abs(action.direction) % state.sequence.length;
       const startIndex = action.direction < 0 ? boundOffset : state.sequence.length - boundOffset;
@@ -521,15 +507,15 @@ export default function KeySeq({ destinationNode }) {
     if (sequenceKeysIndex >= 0) {
       if (isDown) {
         dispatch({
-          type: 'keysDown',
-          keys: [key],
+          type: 'keyDown',
+          sequenceKeysIndex,
           selectedColumn,
           selectedColumnValue
         });
       } else {
         dispatch({
-          type: 'keysUp',
-          keys: [key]
+          type: 'keyUp',
+          sequenceKeysIndex
         });
       }
 
@@ -565,24 +551,6 @@ export default function KeySeq({ destinationNode }) {
         type: 'randomiseSequence',
         selectedColumn
       });
-
-      return;
-    }
-
-    if (key === 'Shift') {
-      if (isDown) {
-        dispatch({
-          type: 'keysDown',
-          keys: sequenceKeys,
-          selectedColumn,
-          selectedColumnValue
-        });
-      } else {
-        dispatch({
-          type: 'keysUp',
-          keys: sequenceKeys
-        });
-      }
 
       return;
     }
