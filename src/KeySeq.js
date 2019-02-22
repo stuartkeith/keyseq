@@ -1,18 +1,17 @@
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useRefLazy } from './effects/useRefLazy';
 import { useViewport } from './effects/useViewport';
-import { arrayReplaceAt, arraySetAt } from './utils/array';
-import { f } from './utils/f';
+import { arraySetAt } from './utils/array';
+import { chain, f, passThrough } from './utils/function';
 import * as stack from './utils/stack';
 import audioContext from './webaudio/audioContext';
 import Scheduler from './webaudio/Scheduler';
 import VisualScheduler from './webaudio/VisualScheduler';
 
-const passThrough = value => value;
-
 const inRange = (value, min, max) => Math.min(max, Math.max(min, value));
 
-const sequenceKeys = ['1', '2', '3', '4', '5', '6', '7', '8'];
+const sequenceKeys = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8'];
+const sequenceKeyLabels = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
 function numberToPercentageString(number) {
   return `${Math.floor(number * 100)}%`;
@@ -183,8 +182,12 @@ const emptyCell = f(() => {
   return cell;
 });
 
+const KEYBOARD_MODE_NORMAL = 'KEYBOARD_MODE_NORMAL';
+const KEYBOARD_MODE_INVERT = 'KEYBOARD_MODE_INVERT';
+
 const initialState = {
-  keyState: sequenceKeys.map(_ => false),
+  rawKeyState: sequenceKeys.map(_ => false),
+  keyboardMode: KEYBOARD_MODE_NORMAL,
   sequence: sequenceKeys.map(_ => emptyCell),
   sequenceBeforeCurrentEdit: null,
   undoStack: stack.create(32)
@@ -194,51 +197,80 @@ function getKeyCount(keyState) {
   return keyState.reduce((count, value) => count + (value ? 1 : 0), 0);
 }
 
+function getKeyState(rawKeyState, keyboardMode) {
+  switch (keyboardMode) {
+    case KEYBOARD_MODE_NORMAL:
+      return rawKeyState;
+    case KEYBOARD_MODE_INVERT:
+      return rawKeyState.map(value => !value);
+    default:
+      throw new Error('invalid keyboardMode - ' + keyboardMode);
+  }
+}
+
+function updateSequence(state, action) {
+  const keyState = getKeyState(state.rawKeyState, state.keyboardMode);
+
+  // no need to process if no keys held down
+  if (getKeyCount(keyState) === 0) {
+    return state;
+  }
+
+  return {
+    ...state,
+    sequence: state.sequence.map(function (cell, index) {
+      if (keyState[index] === false) {
+        return cell;
+      }
+
+      return {
+        ...cell,
+        [action.selectedColumn.key]: action.selectedColumnValue
+      };
+    })
+  };
+}
+
+function getNewStateFromKeyChange(state, nextRawKeyState, nextKeyboardMode) {
+  const existingKeyState = getKeyState(state.rawKeyState, state.keyboardMode);
+  const existingKeyCount = getKeyCount(existingKeyState);
+
+  const nextKeyState = getKeyState(nextRawKeyState, nextKeyboardMode);
+  const nextKeyCount = getKeyCount(nextKeyState);
+
+  const isFirstKeyDown = existingKeyCount === 0 && nextKeyCount > 0;
+  const isLastKeyDown = existingKeyCount > 0 && nextKeyCount === 0;
+
+  const sequenceBeforeCurrentEdit = isFirstKeyDown ? state.sequence : state.sequenceBeforeCurrentEdit;
+  const undoStack = isLastKeyDown ? stack.push(state.undoStack, state.sequenceBeforeCurrentEdit) : state.undoStack;
+
+  return {
+    ...state,
+    rawKeyState: nextRawKeyState,
+    keyboardMode: nextKeyboardMode,
+    sequenceBeforeCurrentEdit,
+    undoStack
+  };
+}
+
 function reducer(state, action) {
   switch (action.type) {
+    case 'setKeyboardMode':
+      return chain(
+        state,
+        state => getNewStateFromKeyChange(state, state.rawKeyState, action.keyboardMode),
+        action.shouldUpdateSequence ? state => updateSequence(state, action) : passThrough
+      );
     case 'keyDown':
-      const newKeyDownState = arraySetAt(state.keyState, action.sequenceKeysIndex, true);
-      const isFirstKeyDown = getKeyCount(state.keyState) === 0 && getKeyCount(newKeyDownState) === 1;
-      const sequenceBeforeCurrentEdit = isFirstKeyDown ? state.sequence : state.sequenceBeforeCurrentEdit;
-
-      return {
-        ...state,
-        keyState: newKeyDownState,
-        sequence: arrayReplaceAt(state.sequence, action.sequenceKeysIndex, cell => ({
-          ...cell,
-          [action.selectedColumn.key]: action.selectedColumnValue
-        })),
-        sequenceBeforeCurrentEdit
-      };
+      return chain(
+        state,
+        state => getNewStateFromKeyChange(state, arraySetAt(state.rawKeyState, action.sequenceKeysIndex, true), state.keyboardMode),
+        state => updateSequence(state, action)
+      );
     case 'keyUp':
-      const newKeyUpState = arraySetAt(state.keyState, action.sequenceKeysIndex, false);
-      const isLastKeyUp = getKeyCount(state.keyState) > 0 && getKeyCount(newKeyUpState) === 0;
-      const undoStack = isLastKeyUp ? stack.push(state.undoStack, state.sequenceBeforeCurrentEdit) : state.undoStack;
-
-      return {
-        ...state,
-        keyState: newKeyUpState,
-        undoStack
-      };
+      return getNewStateFromKeyChange(state, arraySetAt(state.rawKeyState, action.sequenceKeysIndex, false), state.keyboardMode);
     case 'mouseMove':
-      // no need to process if no keys held down
-      if (!state.keyState.find(x => x)) {
-        return state;
-      }
-
-      return {
-        ...state,
-        sequence: state.sequence.map((cell, index) => {
-          if (!state.keyState[index]) {
-            return cell;
-          }
-
-          return {
-            ...cell,
-            [action.selectedColumn.key]: action.selectedColumnValue
-          }
-        })
-      }
+      return updateSequence(state, action);
     case 'shiftSequence':
       const boundOffset = Math.abs(action.direction) % state.sequence.length;
       const startIndex = action.direction < 0 ? boundOffset : state.sequence.length - boundOffset;
@@ -256,12 +288,13 @@ function reducer(state, action) {
         undoStack: stack.push(state.undoStack, state.sequence)
       }
     case 'randomiseSequence':
-      const anyKeysAreDown = !!state.keyState.find(x => x);
+      const keyState = getKeyState(state.rawKeyState, state.keyboardMode);
+      const anyKeysAreDown = !!keyState.find(x => x);
 
       return {
         ...state,
         sequence: state.sequence.map((cell, index) => {
-          if (anyKeysAreDown && !state.keyState[index]) {
+          if (anyKeysAreDown && !keyState[index]) {
             return cell;
           }
 
@@ -342,19 +375,19 @@ function useKeyboard(callback, inputs) {
     };
 
     const onKeyDown = function (event) {
-      if (state[event.key] === true) {
+      if (state[event.code] === true) {
         return;
       }
 
-      state[event.key] = true;
+      state[event.code] = true;
 
-      callback(event.key, true);
+      callback(event.code, true);
     };
 
     const onKeyUp = function (event) {
-      state[event.key] = false;
+      state[event.code] = false;
 
-      callback(event.key, false);
+      callback(event.code, false);
     };
 
     window.addEventListener('blur', onWindowBlur);
@@ -554,6 +587,18 @@ export default function KeySeq({ destinationNode }) {
 
       return;
     }
+
+    if (key === 'ShiftLeft' || key === 'ShiftRight') {
+      dispatch({
+        type: 'setKeyboardMode',
+        keyboardMode: isDown ? KEYBOARD_MODE_INVERT : KEYBOARD_MODE_NORMAL,
+        selectedColumn,
+        selectedColumnValue,
+        shouldUpdateSequence: isDown
+      });
+
+      return;
+    }
   }, [sequenceKeys, state, dispatch, selectedColumn, selectedColumnValue]);
 
   // mouse move
@@ -564,6 +609,8 @@ export default function KeySeq({ destinationNode }) {
       selectedColumnValue
     });
   }, [mouseX, mouseY]);
+
+  const keyState = getKeyState(state.rawKeyState, state.keyboardMode);
 
   return (
     <div className="h-100 relative bg-dark-gray">
@@ -586,7 +633,7 @@ export default function KeySeq({ destinationNode }) {
           <p className="ma0 mb4">{selectedColumn.toString(selectedColumnValue)}</p>
         </div>
         <div className="flex box-shadow-1">
-          {state.keyState.map(function (value, index) {
+          {keyState.map(function (value, index) {
             const containerStyle = {
               opacity: index === sequencerIndex ? '1' : '0.55',
               width: '66px',
@@ -617,7 +664,7 @@ export default function KeySeq({ destinationNode }) {
                   className="absolute absolute--fill flex justify-center items-center f4"
                   style={labelStyle}
                 >
-                  {sequenceKeys[index]}
+                  {sequenceKeyLabels[index]}
                 </div>
               </div>
             );

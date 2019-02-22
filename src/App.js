@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { GainRange } from './components/GainRange';
-import { f } from './utils/f';
+import { f } from './utils/function';
 import audioContext from './webaudio/audioContext';
 const KeySeq = React.lazy(() => import('./KeySeq'));
 
