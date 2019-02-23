@@ -255,6 +255,12 @@ function getNewStateFromKeyChange(state, nextRawKeyState, nextKeyboardMode) {
 
 function reducer(state, action) {
   switch (action.type) {
+    case 'resetSequence':
+      return {
+        ...state,
+        sequence: initialState.sequence,
+        undoStack: stack.push(state.undoStack, state.sequence)
+      };
     case 'setKeyboardMode':
       return chain(
         state,
@@ -683,6 +689,13 @@ export default function KeySeq({ destinationNode }) {
           onClick={() => dispatch({ type: 'popUndo' })}
         >
             Undo
+        </Button>
+        <span className="dib w2 flex-none" />
+        <Button
+          disabled={stack.isEmpty(state.undoStack)}
+          onClick={() => dispatch({ type: 'resetSequence' })}
+        >
+            Reset
         </Button>
       </div>
     </div>
