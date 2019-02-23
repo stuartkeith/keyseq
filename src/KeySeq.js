@@ -1,7 +1,7 @@
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { useRefLazy } from './effects/useRefLazy';
 import { useViewport } from './effects/useViewport';
-import { arraySetAt } from './utils/array';
+import { arrayReplaceAt, arraySetAt } from './utils/array';
 import { chain, f, passThrough } from './utils/function';
 import * as stack from './utils/stack';
 import audioContext from './webaudio/audioContext';
@@ -12,6 +12,9 @@ const inRange = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const sequenceKeys = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8'];
 const sequenceKeyLabels = ['1', '2', '3', '4', '5', '6', '7', '8'];
+
+const sequencesIndexKeys = ['KeyZ', 'KeyX', 'KeyC', 'KeyV'];
+const sequencesIndexKeyLabels = ['Z', 'X', 'C', 'V'];
 
 function numberToPercentageString(number) {
   return `${Math.floor(number * 100)}%`;
@@ -174,22 +177,27 @@ const columns = [
   }
 ];
 
-const emptyCell = f(() => {
+function createCell(valueCallback) {
   const cell = {};
 
-  columns.forEach(column => cell[column.key] = column.defaultValue);
+  columns.forEach(column => cell[column.key] = valueCallback(column));
 
   return cell;
-});
+}
+
+const emptyCell = createCell(column => column.defaultValue);
 
 const KEYBOARD_MODE_NORMAL = 'KEYBOARD_MODE_NORMAL';
 const KEYBOARD_MODE_INVERT = 'KEYBOARD_MODE_INVERT';
 
+const emptySequence = sequenceKeys.map(_ => emptyCell);
+
 const initialState = {
   rawKeyState: sequenceKeys.map(_ => false),
   keyboardMode: KEYBOARD_MODE_NORMAL,
-  sequence: sequenceKeys.map(_ => emptyCell),
-  sequenceBeforeCurrentEdit: null,
+  sequences: sequencesIndexKeys.map(_ => emptySequence),
+  sequencesIndex: 0,
+  sequencesBeforeCurrentEdit: null,
   undoStack: stack.create(32)
 };
 
@@ -208,7 +216,19 @@ function getKeyState(rawKeyState, keyboardMode) {
   }
 }
 
-function updateSequence(state, action) {
+function getCurrentSequence(state) {
+  return state.sequences[state.sequencesIndex];
+}
+
+function replaceCurrentSequence(state, callback) {
+  return arrayReplaceAt(state.sequences, state.sequencesIndex, callback);
+}
+
+function mapCurrentSequence(state, callback) {
+  return replaceCurrentSequence(state, sequence => sequence.map(callback));
+}
+
+function updateSequenceWithAction(state, action) {
   const keyState = getKeyState(state.rawKeyState, state.keyboardMode);
 
   // no need to process if no keys held down
@@ -218,7 +238,7 @@ function updateSequence(state, action) {
 
   return {
     ...state,
-    sequence: state.sequence.map(function (cell, index) {
+    sequences: mapCurrentSequence(state, function (cell, index) {
       if (keyState[index] === false) {
         return cell;
       }
@@ -241,14 +261,14 @@ function getNewStateFromKeyChange(state, nextRawKeyState, nextKeyboardMode) {
   const isFirstKeyDown = existingKeyCount === 0 && nextKeyCount > 0;
   const isLastKeyDown = existingKeyCount > 0 && nextKeyCount === 0;
 
-  const sequenceBeforeCurrentEdit = isFirstKeyDown ? state.sequence : state.sequenceBeforeCurrentEdit;
-  const undoStack = isLastKeyDown ? stack.push(state.undoStack, state.sequenceBeforeCurrentEdit) : state.undoStack;
+  const sequencesBeforeCurrentEdit = isFirstKeyDown ? state.sequences : state.sequencesBeforeCurrentEdit;
+  const undoStack = isLastKeyDown ? stack.push(state.undoStack, state.sequencesBeforeCurrentEdit) : state.undoStack;
 
   return {
     ...state,
     rawKeyState: nextRawKeyState,
     keyboardMode: nextKeyboardMode,
-    sequenceBeforeCurrentEdit,
+    sequencesBeforeCurrentEdit,
     undoStack
   };
 }
@@ -258,48 +278,62 @@ function reducer(state, action) {
     case 'resetSequence':
       return {
         ...state,
-        sequence: initialState.sequence,
-        undoStack: stack.push(state.undoStack, state.sequence)
+        sequences: replaceCurrentSequence(state, _ => emptySequence),
+        undoStack: stack.push(state.undoStack, state.sequences)
+      };
+    case 'selectSequence':
+      return {
+        ...state,
+        sequencesIndex: action.sequencesIndex
       };
     case 'setKeyboardMode':
       return chain(
         state,
         state => getNewStateFromKeyChange(state, state.rawKeyState, action.keyboardMode),
-        action.shouldUpdateSequence ? state => updateSequence(state, action) : passThrough
+        action.shouldUpdateSequenceWithAction ? state => updateSequenceWithAction(state, action) : passThrough
       );
     case 'keyDown':
       return chain(
         state,
         state => getNewStateFromKeyChange(state, arraySetAt(state.rawKeyState, action.sequenceKeysIndex, true), state.keyboardMode),
-        state => updateSequence(state, action)
+        state => updateSequenceWithAction(state, action)
       );
     case 'keyUp':
       return getNewStateFromKeyChange(state, arraySetAt(state.rawKeyState, action.sequenceKeysIndex, false), state.keyboardMode);
     case 'mouseMove':
-      return updateSequence(state, action);
+      return updateSequenceWithAction(state, action);
     case 'shiftSequence':
-      const boundOffset = Math.abs(action.direction) % state.sequence.length;
-      const startIndex = action.direction < 0 ? boundOffset : state.sequence.length - boundOffset;
+      const sequence = getCurrentSequence(state);
+      const boundOffset = Math.abs(action.direction) % sequence.length;
+      const startIndex = action.direction < 0 ? boundOffset : sequence.length - boundOffset;
 
       return {
         ...state,
-        sequence: state.sequence.map(function (cell, index) {
-          const targetIndex = (index + startIndex) % state.sequence.length;
+        sequences: mapCurrentSequence(state, function (cell, index) {
+          const targetIndex = (index + startIndex) % sequence.length;
 
           return {
             ...cell,
-            [action.selectedColumn.key]: state.sequence[targetIndex][action.selectedColumn.key]
+            [action.selectedColumn.key]: sequence[targetIndex][action.selectedColumn.key]
           };
         }),
-        undoStack: stack.push(state.undoStack, state.sequence)
+        undoStack: stack.push(state.undoStack, state.sequences)
       }
+    case 'randomiseAll':
+      return {
+        ...state,
+        sequences: mapCurrentSequence(state, function () {
+          return createCell(column => column.denormalise(Math.random()));
+        }),
+        undoStack: stack.push(state.undoStack, state.sequences)
+      };
     case 'randomiseSequence':
       const keyState = getKeyState(state.rawKeyState, state.keyboardMode);
       const anyKeysAreDown = !!keyState.find(x => x);
 
       return {
         ...state,
-        sequence: state.sequence.map((cell, index) => {
+        sequences: mapCurrentSequence(state, function (cell, index) {
           if (anyKeysAreDown && !keyState[index]) {
             return cell;
           }
@@ -309,7 +343,7 @@ function reducer(state, action) {
             [action.selectedColumn.key]: action.selectedColumn.denormalise(Math.random())
           };
         }),
-        undoStack: stack.push(state.undoStack, state.sequence)
+        undoStack: stack.push(state.undoStack, state.sequences)
       };
     case 'popUndo':
       if (stack.isEmpty(state.undoStack)) {
@@ -318,7 +352,7 @@ function reducer(state, action) {
 
       return {
         ...state,
-        sequence: stack.read(state.undoStack),
+        sequences: stack.read(state.undoStack),
         undoStack: stack.pop(state.undoStack)
       };
     default:
@@ -512,13 +546,14 @@ function VerticalMeter({ colors, scale, children }) {
 
 function Button({ disabled, onClick, children }) {
   const className = `
-    input-reset bg-white dark-gray dib bw0 w3 pa2 box-shadow-1 flex-none
+    input-reset bg-white dark-gray dib bw0 f6 pa2 box-shadow-1 flex-none
     ${disabled ? 'moon-gray' : 'dark-gray'}
   `;
 
   return (
     <button
       className={className}
+      style={{ width: '5rem' }}
       disabled={disabled}
       onClick={onClick}
     >
@@ -529,8 +564,12 @@ function Button({ disabled, onClick, children }) {
 
 export default function KeySeq({ destinationNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
+
   const [state, dispatch] = useReducer(reducer, initialState);
-  const [sequencerIndex] = useSequencer(isPlaying, state.sequence, destinationNode);
+
+  const sequence = getCurrentSequence(state);
+
+  const [sequencerIndex] = useSequencer(isPlaying, sequence, destinationNode);
 
   const mouseRef = useRef();
   const viewportDimensions = useViewport();
@@ -585,10 +624,12 @@ export default function KeySeq({ destinationNode }) {
       return;
     }
 
-    if (isDown && (key === 'ArrowUp' || key === 'ArrowDown')) {
+    const sequencesIndex = sequencesIndexKeys.indexOf(key);
+
+    if (sequencesIndex >= 0 && isDown) {
       dispatch({
-        type: 'randomiseSequence',
-        selectedColumn
+        type: 'selectSequence',
+        sequencesIndex: sequencesIndex
       });
 
       return;
@@ -601,6 +642,15 @@ export default function KeySeq({ destinationNode }) {
         selectedColumn,
         selectedColumnValue,
         shouldUpdateSequence: isDown
+      });
+
+      return;
+    }
+
+    if ((key === 'ArrowUp' || key === 'ArrowDown') && isDown) {
+      dispatch({
+        type: 'randomiseSequence',
+        selectedColumn
       });
 
       return;
@@ -654,7 +704,7 @@ export default function KeySeq({ destinationNode }) {
               transition: 'transform 173ms',
             };
 
-            const cellValue = selectedColumn.normalise(state.sequence[index][selectedColumn.key]);
+            const cellValue = selectedColumn.normalise(sequence[index][selectedColumn.key]);
 
             return (
               <div
@@ -676,6 +726,23 @@ export default function KeySeq({ destinationNode }) {
             );
           })}
         </div>
+        <div className="flex mt4">
+          {sequencesIndexKeys.map((_, index) => (
+            <div
+              key={index}
+              className={`
+                flex-none flex justify-center items-center f5 w2 h2 ba br2 mid-gray b
+                ${index > 0 ? 'ml3' : ''}
+              `}
+              style={{
+                opacity: state.sequencesIndex === index ? '1' : '0.25',
+                willChange: 'opacity'
+              }}
+            >
+              {sequencesIndexKeyLabels[index]}
+            </div>
+          ))}
+        </div>
       </div>
       <div className="relative pa3 flex">
         <Button
@@ -696,6 +763,12 @@ export default function KeySeq({ destinationNode }) {
           onClick={() => dispatch({ type: 'resetSequence' })}
         >
             Reset
+        </Button>
+        <span className="dib w1 flex-none" />
+        <Button
+          onClick={() => dispatch({ type: 'randomiseAll' })}
+        >
+            Random
         </Button>
       </div>
     </div>
