@@ -735,6 +735,8 @@ export default function KeySeq({ destinationNode }) {
               `}
               style={{
                 opacity: state.sequencesIndex === index ? '1' : '0.25',
+                transform: state.sequencesIndex === index ? 'translate3d(0, 10%, 0)' : '',
+                transition: 'opacity 293ms, transform 153ms',
                 willChange: 'opacity'
               }}
             >
