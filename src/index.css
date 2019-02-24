@@ -40,3 +40,7 @@ body,
 .pointer-events-none {
   pointer-events: none;
 }
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

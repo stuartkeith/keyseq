@@ -9,7 +9,7 @@ export function Range({ value, min, max, step, containerClassName = '', sliderCl
   };
 
   return (
-    <div className={`relative z-0 ${containerClassName}`}>
+    <div className={`relative z-0 tabular-nums ${containerClassName}`}>
       <div className="absolute absolute--fill overflow-hidden w-100 h-100 z-minus-1">
         <div className={`absolute absolute--fill ${sliderClassName}`} style={sliderStyle} />
       </div>

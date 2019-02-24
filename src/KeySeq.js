@@ -668,7 +668,7 @@ export default function KeySeq({ destinationNode }) {
       <div className="absolute absolute--fill flex flex-column justify-center items-center pointer-events-none">
         <div className="f3 tc dark-gray">
           <p className="ma0 mb2 b">{selectedColumn.label}</p>
-          <p className="ma0 mb4">{selectedColumn.toString(selectedColumnValue)}</p>
+          <p className="ma0 mb4 tabular-nums">{selectedColumn.toString(selectedColumnValue)}</p>
         </div>
         <div className="flex box-shadow-1">
           {keyState.map(function (value, index) {
