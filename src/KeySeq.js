@@ -579,6 +579,8 @@ export default function KeySeq({ destinationNode }) {
   const selectedColumn = columns[selectedColumnIndex];
   const selectedColumnValue = selectedColumn.denormalise(mouseY);
 
+  const keyState = getKeyState(state.rawKeyState, state.keyboardMode);
+
   useKeyboard(function (key, isDown) {
     const sequenceKeysIndex = sequenceKeys.indexOf(key);
 
@@ -664,8 +666,6 @@ export default function KeySeq({ destinationNode }) {
       selectedColumnValue
     });
   }, [mouseX, mouseY]);
-
-  const keyState = getKeyState(state.rawKeyState, state.keyboardMode);
 
   return (
     <div className="h-100 relative bg-dark-gray">
