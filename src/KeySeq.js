@@ -292,7 +292,7 @@ function reducer(state, action) {
       return chain(
         state,
         state => getNewStateFromKeyChange(state, state.rawKeyState, action.keyboardMode),
-        action.shouldUpdateSequenceWithAction ? state => updateSequenceWithAction(state, action) : passThrough
+        action.shouldUpdateSequence ? state => updateSequenceWithAction(state, action) : passThrough
       );
     case 'keyDown':
       return chain(
