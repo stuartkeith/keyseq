@@ -1,5 +1,6 @@
 import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { ButtonA } from './components/ButtonA';
+import { RangeA } from './components/RangeA';
 import { useRefLazy } from './effects/useRefLazy';
 import { useViewport } from './effects/useViewport';
 import { arrayReplaceAt, arraySetAt } from './utils/array';
@@ -492,11 +493,13 @@ function playSynthNote(cell, startTime, destinationNode) {
   gainNode.connect(destinationNode);
 }
 
-function useSequencer(isPlaying, sequence, destinationNode, dispatch) {
+function useSequencer(bpm, isPlaying, sequence, destinationNode, dispatch) {
   const [index, setIndex] = useState(0);
 
-  const scheduler = useRefLazy(() => new Scheduler(96));
+  const scheduler = useRefLazy(() => new Scheduler());
   const visualScheduler = useRefLazy(() => new VisualScheduler());
+
+  scheduler.bpm = bpm;
 
   scheduler.callback = function (beatTime, beatLength, index) {
     const sequenceIndex = index % sequence.length;
@@ -546,13 +549,14 @@ function VerticalMeter({ colors, scale, children }) {
 }
 
 export default function KeySeq({ destinationNode }) {
+  const [bpm, setBpm] = useState(96);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const sequence = getCurrentSequence(state);
 
-  const [sequencerIndex] = useSequencer(isPlaying, sequence, destinationNode);
+  const [sequencerIndex] = useSequencer(bpm, isPlaying, sequence, destinationNode);
 
   const mouseRef = useRef();
   const viewportDimensions = useViewport();
@@ -735,11 +739,21 @@ export default function KeySeq({ destinationNode }) {
             {isPlaying ? 'Stop' : 'Play'}
         </ButtonA>
         <span className="dib w1 flex-none" />
+        <RangeA
+          value={bpm}
+          min={40}
+          max={160}
+          step={1}
+          onChange={setBpm}
+        >
+          BPM: {bpm}
+        </RangeA>
+        <span className="dib w2 flex-none" />
         <ButtonA
           disabled={stack.isEmpty(state.undoStack)}
           onClick={() => dispatch({ type: 'popUndo' })}
         >
-            Undo
+          Undo
         </ButtonA>
         <span className="dib w2 flex-none" />
         <ButtonA
