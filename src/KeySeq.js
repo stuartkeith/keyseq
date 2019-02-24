@@ -113,7 +113,7 @@ const columns = [
     label: 'Octave',
     key: 'octave',
     colors: generateColumnColors(colorIndex++),
-    ...integerColumn(0, -2, 2, passThrough)
+    ...integerColumn(0, -2, 2, value => `${value >= 0 ? '+' : ''}${value}`)
   },
   {
     label: 'Gain',
