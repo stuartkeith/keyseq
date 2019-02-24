@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect, useState } from 'react';
-import { GainRange } from './components/GainRange';
+import { RangeA } from './components/RangeA';
 import { f } from './utils/function';
 import audioContext from './webaudio/audioContext';
 const KeySeq = React.lazy(() => import('./KeySeq'));
@@ -32,7 +32,17 @@ function App() {
   return (
     <Suspense fallback={<p>Loading...</p>}>
       <KeySeq destinationNode={gainNode} />
-      <GainRange gain={gain} onChange={setGain} />
+      <div className="fixed right-1 top-1">
+        <RangeA
+          value={gain}
+          min={0}
+          max={1}
+          step={0.05}
+          onChange={setGain}
+        >
+          Volume
+        </RangeA>
+      </div>
     </Suspense>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useReducer, useRef, useState } from 'react';
+import { ButtonA } from './components/ButtonA';
 import { useRefLazy } from './effects/useRefLazy';
 import { useViewport } from './effects/useViewport';
 import { arrayReplaceAt, arraySetAt } from './utils/array';
@@ -544,24 +545,6 @@ function VerticalMeter({ colors, scale, children }) {
   );
 }
 
-function Button({ disabled, onClick, children }) {
-  const className = `
-    input-reset bg-white dark-gray dib bw0 f6 pa2 box-shadow-1 flex-none
-    ${disabled ? 'moon-gray' : 'dark-gray'}
-  `;
-
-  return (
-    <button
-      className={className}
-      style={{ width: '5rem' }}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
-}
-
 export default function KeySeq({ destinationNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -746,31 +729,31 @@ export default function KeySeq({ destinationNode }) {
         </div>
       </div>
       <div className="relative pa3 flex">
-        <Button
+        <ButtonA
           onClick={() => setIsPlaying(!isPlaying)}
         >
             {isPlaying ? 'Stop' : 'Play'}
-        </Button>
+        </ButtonA>
         <span className="dib w1 flex-none" />
-        <Button
+        <ButtonA
           disabled={stack.isEmpty(state.undoStack)}
           onClick={() => dispatch({ type: 'popUndo' })}
         >
             Undo
-        </Button>
+        </ButtonA>
         <span className="dib w2 flex-none" />
-        <Button
+        <ButtonA
           disabled={stack.isEmpty(state.undoStack)}
           onClick={() => dispatch({ type: 'resetSequence' })}
         >
             Reset
-        </Button>
+        </ButtonA>
         <span className="dib w1 flex-none" />
-        <Button
+        <ButtonA
           onClick={() => dispatch({ type: 'randomiseAll' })}
         >
             Random
-        </Button>
+        </ButtonA>
       </div>
     </div>
   );
