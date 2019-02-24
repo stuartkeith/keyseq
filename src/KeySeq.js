@@ -657,7 +657,6 @@ export default function KeySeq({ destinationNode }) {
     }
   }, [sequenceKeys, state, dispatch, selectedColumn, selectedColumnValue]);
 
-  // mouse move
   useEffect(function () {
     dispatch({
       type: 'mouseMove',
