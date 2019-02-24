@@ -683,7 +683,7 @@ export default function KeySeq({ destinationNode }) {
           );
         })}
       </div>
-      <div className="absolute absolute--fill flex flex-column justify-center items-center">
+      <div className="absolute absolute--fill flex flex-column justify-center items-center pointer-events-none">
         <div className="f3 tc dark-gray">
           <p className="ma0 mb2 b">{selectedColumn.label}</p>
           <p className="ma0 mb4">{selectedColumn.toString(selectedColumnValue)}</p>
