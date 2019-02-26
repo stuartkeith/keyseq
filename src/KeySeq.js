@@ -509,7 +509,7 @@ function playSynthNote(cell, startTime, destinationNode) {
   gainNode.connect(destinationNode);
 }
 
-function useSequencer(bpm, isPlaying, sequence, destinationNode, dispatch) {
+function useSequencer(bpm, swing, isPlaying, sequence, destinationNode) {
   const [index, setIndex] = useState(0);
 
   const scheduler = useRefLazy(() => new Scheduler());
@@ -520,7 +520,7 @@ function useSequencer(bpm, isPlaying, sequence, destinationNode, dispatch) {
   scheduler.callback = function (beatTime, beatLength, index) {
     const sequenceIndex = index % sequence.length;
     const cell = sequence[sequenceIndex];
-    const beatSwingOffset = sequenceIndex % 2 ? 0 : beatLength * 0.3;
+    const beatSwingOffset = sequenceIndex % 2 ? 0 : beatLength * swing;
     const beatTimeOffset = beatTime + beatSwingOffset;
 
     if (cell.note !== null && cell.gain > 0) {
@@ -567,13 +567,14 @@ function VerticalMeter({ colors, scale, children }) {
 
 export default function KeySeq({ destinationNode }) {
   const [bpm, setBpm] = useState(96);
+  const [swing, setSwing] = useState(0.3);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const sequence = getCurrentSequence(state);
 
-  const [sequencerIndex] = useSequencer(bpm, isPlaying, sequence, destinationNode);
+  const [sequencerIndex] = useSequencer(bpm, swing, isPlaying, sequence, destinationNode);
 
   const mouseRef = useRef();
   const viewportDimensions = useViewport();
@@ -764,6 +765,16 @@ export default function KeySeq({ destinationNode }) {
           onChange={setBpm}
         >
           BPM: {bpm}
+        </RangeA>
+        <span className="dib w1 flex-none" />
+        <RangeA
+          value={swing}
+          min={0}
+          max={0.7}
+          step={0.05}
+          onChange={setSwing}
+        >
+          Swing: {numberToPercentageString(swing)}
         </RangeA>
         <span className="dib w2 flex-none" />
         <ButtonA
