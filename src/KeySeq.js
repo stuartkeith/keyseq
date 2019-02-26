@@ -445,32 +445,34 @@ function useKeyboard(callback, inputs) {
 }
 
 function playSynthNote(cell, startTime, destinationNode) {
-  const scaleNote = cell.note + (cell.octave * 12) - 12;
-
-  const frequency = 440 * Math.pow(2, (scaleNote + 3) / 12);
-
   // create nodes
-  const osc = audioContext.createOscillator();
-  osc.type = cell.waveform;
-  osc.frequency.value = frequency;
+  const osc = f(() => {
+    const scaleNote = cell.note + (cell.octave * 12) - 12;
+    const frequency = 440 * Math.pow(2, (scaleNote + 3) / 12);
 
-  const filterMin = 100;
-  const filterMax = 22000;
-  const filterRange = filterMax - filterMin;
-  const filterLog = Math.log2(filterMax / filterMin);
-  const filterLogScale = filterMin + (filterRange * Math.pow(2, filterLog * (cell.filterFrequency - 1)));
+    const osc = audioContext.createOscillator();
+    osc.type = cell.waveform;
+    osc.frequency.value = frequency;
 
-  const lowpassNode = audioContext.createBiquadFilter();
-  lowpassNode.type = 'lowpass';
-  lowpassNode.frequency.value = filterLogScale;
-  lowpassNode.Q.value = cell.filterResonance * 30;
+    return osc;
+  });
 
-  const noteTime = 0.1 + (cell.decay * 3);
+  const lowpassNode = f(() => {
+    const filterMin = 100;
+    const filterMax = 22000;
+    const filterRange = filterMax - filterMin;
+    const filterLog = Math.log2(filterMax / filterMin);
+    const filterLogScale = filterMin + (filterRange * Math.pow(2, filterLog * (cell.filterFrequency - 1)));
+
+    const lowpassNode = audioContext.createBiquadFilter();
+    lowpassNode.type = 'lowpass';
+    lowpassNode.frequency.value = filterLogScale;
+    lowpassNode.Q.value = cell.filterResonance * 30;
+
+    return lowpassNode;
+  });
 
   const gainNode = audioContext.createGain();
-
-  gainNode.gain.setValueAtTime(Math.pow(cell.gain, 1.6), startTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + noteTime);
 
   const lfo = audioContext.createOscillator();
   lfo.type = 'sine';
@@ -479,13 +481,27 @@ function playSynthNote(cell, startTime, destinationNode) {
   const lfoGain = audioContext.createGain();
   lfoGain.gain.value = cell.lfoGain * 25;
 
+  // set values that change over time
+  const stopTime = f(() => {
+    const decayTime = 0.06 + (cell.decay * 3);
+
+    // increment when necessary
+    let currentTime = startTime;
+
+    gainNode.gain.setValueAtTime(Math.pow(cell.gain, 1.6), currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, currentTime += decayTime);
+
+    return currentTime;
+  });
+
+  // start oscillators
   osc.start(startTime);
-  osc.stop(startTime + noteTime);
+  osc.stop(stopTime);
 
   lfo.start(startTime);
-  lfo.stop(startTime + noteTime);
+  lfo.stop(stopTime);
 
-  // routing
+  // route nodes
   lfo.connect(lfoGain);
   lfoGain.connect(osc.frequency);
   osc.connect(lowpassNode);
@@ -504,7 +520,8 @@ function useSequencer(bpm, isPlaying, sequence, destinationNode, dispatch) {
   scheduler.callback = function (beatTime, beatLength, index) {
     const sequenceIndex = index % sequence.length;
     const cell = sequence[sequenceIndex];
-    const beatTimeOffset = beatTime + (sequenceIndex % 2 ? 0 : beatLength * 0.3);
+    const beatSwingOffset = sequenceIndex % 2 ? 0 : beatLength * 0.3;
+    const beatTimeOffset = beatTime + beatSwingOffset;
 
     if (cell.note !== null && cell.gain > 0) {
       playSynthNote(cell, beatTimeOffset, destinationNode);
