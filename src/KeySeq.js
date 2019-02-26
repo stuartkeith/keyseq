@@ -754,7 +754,7 @@ export default function KeySeq({ destinationNode }) {
         <ButtonA
           onClick={() => setIsPlaying(!isPlaying)}
         >
-            {isPlaying ? 'Stop' : 'Play'}
+          {isPlaying ? 'Stop' : 'Play'}
         </ButtonA>
         <span className="dib w1 flex-none" />
         <RangeA
@@ -788,13 +788,13 @@ export default function KeySeq({ destinationNode }) {
           disabled={stack.isEmpty(state.undoStack)}
           onClick={() => dispatch({ type: 'resetSequence' })}
         >
-            Reset
+          Reset
         </ButtonA>
         <span className="dib w1 flex-none" />
         <ButtonA
           onClick={() => dispatch({ type: 'randomiseAll' })}
         >
-            Random
+          Random
         </ButtonA>
       </div>
     </div>
