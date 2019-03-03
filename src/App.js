@@ -1,7 +1,8 @@
 import React, { Suspense, useEffect, useState } from 'react';
-import { RangeA } from './components/RangeA';
+import { GainContext } from './components/GainRange';
 import { f } from './utils/function';
 import audioContext from './webaudio/audioContext';
+
 const KeySeq = React.lazy(() => import('./KeySeq'));
 
 const gainLocalStorageKey = 'gain';
@@ -31,18 +32,9 @@ function App() {
 
   return (
     <Suspense fallback={<p>Loading...</p>}>
-      <KeySeq destinationNode={gainNode} />
-      <div className="fixed right-1 top-1">
-        <RangeA
-          value={gain}
-          min={0}
-          max={1}
-          step={0.05}
-          onChange={setGain}
-        >
-          Volume
-        </RangeA>
-      </div>
+      <GainContext.Provider value={{ gain, setGain, gainNode }}>
+        <KeySeq />
+      </GainContext.Provider>
     </Suspense>
   );
 }

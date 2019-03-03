@@ -1,5 +1,6 @@
-import React, { useEffect, useReducer, useRef, useState } from 'react';
+import React, { useContext, useEffect, useReducer, useRef, useState } from 'react';
 import { ButtonA } from './components/ButtonA';
+import { GainContext, GainRange } from './components/GainRange';
 import { RangeA } from './components/RangeA';
 import { useRefLazy } from './effects/useRefLazy';
 import { useViewport } from './effects/useViewport';
@@ -565,7 +566,8 @@ function VerticalMeter({ colors, scale, children }) {
   );
 }
 
-export default function KeySeq({ destinationNode }) {
+export default function KeySeq() {
+  const destinationNode = useContext(GainContext).gainNode;
   const [bpm, setBpm] = useState(96);
   const [swing, setSwing] = useState(0.3);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -796,6 +798,8 @@ export default function KeySeq({ destinationNode }) {
         >
           Random
         </ButtonA>
+        <span className="dib w2 flex-auto flex-shrink-0" />
+        <GainRange />
       </div>
     </div>
   );
