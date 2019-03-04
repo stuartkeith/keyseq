@@ -357,6 +357,24 @@ const [reducer, initialState, getCurrentSequence, getKeyState] = f(() => {
         return updateSequenceWithAction(state, action);
       case 'shiftSequence':
         const sequence = getCurrentSequence(state);
+        const columnKey = action.selectedColumn.key;
+
+        // if all column values in the sequence are equal, there will be no
+        // visual difference. bail out to avoid an unnecessary undo stack push.
+        const areAllSequenceColumnValuesEqual = f(() => {
+          for (let i = 1; i < sequence.length; i++) {
+            if (sequence[i - 1][columnKey] !== sequence[i][columnKey]) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+
+        if (areAllSequenceColumnValuesEqual) {
+          return state;
+        }
+
         const boundOffset = Math.abs(action.direction) % sequence.length;
         const startIndex = action.direction < 0 ? boundOffset : sequence.length - boundOffset;
 
@@ -367,7 +385,7 @@ const [reducer, initialState, getCurrentSequence, getKeyState] = f(() => {
 
             return {
               ...cell,
-              [action.selectedColumn.key]: sequence[targetIndex][action.selectedColumn.key]
+              [columnKey]: sequence[targetIndex][columnKey]
             };
           }),
           undoStack: stack.push(state.undoStack, state.sequences)
