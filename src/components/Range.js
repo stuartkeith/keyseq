@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function Range({ value, min, max, step, containerClassName = '', sliderClassName = '', children, onChange }) {
+export function Range({ value, disabled, min, max, step, containerClassName = '', sliderClassName = '', children, onChange }) {
   const scale = (value - min) / (max - min);
 
   const sliderStyle = {
@@ -16,7 +16,8 @@ export function Range({ value, min, max, step, containerClassName = '', sliderCl
       {children}
       <input
         type="range"
-        className="input-range-reset pointer absolute absolute--fill w-100"
+        className="input-range-reset absolute absolute--fill w-100"
+        disabled={disabled}
         value={value}
         min={min}
         max={max}

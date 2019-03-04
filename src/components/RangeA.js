@@ -9,7 +9,7 @@ export function RangeA({ children, ...props }) {
       containerClassName="bg-white box-shadow-1"
       sliderClassName="bg-moon-gray"
     >
-      <LabelA>{children}</LabelA>
+      <LabelA disabled={props.disabled}>{children}</LabelA>
     </Range>
   );
 }
