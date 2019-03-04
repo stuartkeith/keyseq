@@ -569,7 +569,7 @@ function VerticalMeter({ colors, scale, children }) {
 export default function KeySeq() {
   const destinationNode = useContext(GainContext).gainNode;
   const [bpm, setBpm] = useState(96);
-  const [swing, setSwing] = useState(0.3);
+  const [swing, setSwing] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const [state, dispatch] = useReducer(reducer, initialState);
