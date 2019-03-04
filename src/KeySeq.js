@@ -328,11 +328,6 @@ const [reducer, initialState, getCurrentSequence, getKeyState] = f(() => {
 
   function reducer(state, action) {
     switch (action.type) {
-      case 'setAdvancedControlsVisibility':
-        return {
-          ...state,
-          showAdvancedControls: action.value
-        };
       case 'resetSequence':
         return {
           ...state,
@@ -652,6 +647,7 @@ export default function KeySeq() {
   const [bpm, setBpm] = useState(96);
   const [swing, setSwing] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -663,7 +659,7 @@ export default function KeySeq() {
   const viewportDimensions = useViewport();
   const [mouseX, mouseY] = useMouse(mouseRef, viewportDimensions);
 
-  const visibleColumnKeys = state.showAdvancedControls ? columnKeysAdvanced : columnKeys;
+  const visibleColumnKeys = showAdvancedControls ? columnKeysAdvanced : columnKeys;
 
   const visibleColumns = useMemo(() => {
     return visibleColumnKeys.map((key, i) => ({
@@ -725,7 +721,7 @@ export default function KeySeq() {
 
     const sequencesIndex = sequencesIndexKeys.findIndex(sequencesIndexKey => sequencesIndexKey.code === code);
 
-    if (state.showAdvancedControls && (sequencesIndex >= 0 && isDown)) {
+    if (showAdvancedControls && (sequencesIndex >= 0 && isDown)) {
       dispatch({
         type: 'selectSequence',
         sequencesIndex: sequencesIndex
@@ -754,7 +750,7 @@ export default function KeySeq() {
 
       return;
     }
-  }, [sequenceKeys, state, dispatch, selectedColumn, selectedColumnValue, state.showAdvancedControls]);
+  }, [sequenceKeys, state, dispatch, selectedColumn, selectedColumnValue, showAdvancedControls]);
 
   useEffect(function () {
     dispatch({
@@ -822,7 +818,7 @@ export default function KeySeq() {
             );
           })}
         </div>
-        <HiddenContainer isVisible={state.showAdvancedControls}>
+        <HiddenContainer isVisible={showAdvancedControls}>
           <div className="flex mt4">
             {sequencesIndexKeys.map((sequencesIndexKey, index) => (
               <div
@@ -852,16 +848,16 @@ export default function KeySeq() {
         </ButtonA>
         <span className="dib w2 flex-none" />
         <CheckboxA
-          checked={state.showAdvancedControls}
-          onChange={() => dispatch({ type: 'setAdvancedControlsVisibility', value: !state.showAdvancedControls })}
+          checked={showAdvancedControls}
+          onChange={() => setShowAdvancedControls(!showAdvancedControls)}
         >
           Advanced
         </CheckboxA>
         <span className="dib w2 flex-none" />
-        <HiddenContainer isVisible={state.showAdvancedControls}>
+        <HiddenContainer isVisible={showAdvancedControls}>
           <RangeA
             value={bpm}
-            disabled={!state.showAdvancedControls}
+            disabled={!showAdvancedControls}
             min={40}
             max={160}
             step={1}
@@ -871,10 +867,10 @@ export default function KeySeq() {
           </RangeA>
         </HiddenContainer>
         <span className="dib w1 flex-none" />
-        <HiddenContainer isVisible={state.showAdvancedControls}>
+        <HiddenContainer isVisible={showAdvancedControls}>
           <RangeA
             value={swing}
-            disabled={!state.showAdvancedControls}
+            disabled={!showAdvancedControls}
             min={0}
             max={0.7}
             step={0.05}
@@ -884,25 +880,25 @@ export default function KeySeq() {
           </RangeA>
         </HiddenContainer>
         <span className="dib w2 flex-none" />
-        <HiddenContainer isVisible={state.showAdvancedControls}>
+        <HiddenContainer isVisible={showAdvancedControls}>
           <ButtonA
-            disabled={!state.showAdvancedControls || stack.isEmpty(state.undoStack)}
+            disabled={!showAdvancedControls || stack.isEmpty(state.undoStack)}
             onClick={() => dispatch({ type: 'popUndo' })}
           >
             Undo
           </ButtonA>
         </HiddenContainer>
         <span className="dib w2 flex-none" />
-        <HiddenContainer isVisible={state.showAdvancedControls}>
+        <HiddenContainer isVisible={showAdvancedControls}>
           <ButtonA
-            disabled={!state.showAdvancedControls || sequence === initialState.sequences[state.sequencesIndex]}
+            disabled={!showAdvancedControls || sequence === initialState.sequences[state.sequencesIndex]}
             onClick={() => dispatch({ type: 'resetSequence' })}
           >
             Reset
           </ButtonA>
         </HiddenContainer>
         <span className="dib w1 flex-none" />
-        <HiddenContainer isVisible={state.showAdvancedControls}>
+        <HiddenContainer isVisible={showAdvancedControls}>
           <ButtonA
             onClick={() => dispatch({ type: 'randomiseAll' })}
           >
