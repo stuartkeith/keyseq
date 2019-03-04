@@ -846,14 +846,7 @@ export default function KeySeq() {
         >
           {isPlaying ? 'Stop' : 'Play'}
         </ButtonA>
-        <span className="dib w2 flex-none" />
-        <CheckboxA
-          checked={showAdvancedControls}
-          onChange={() => setShowAdvancedControls(!showAdvancedControls)}
-        >
-          Advanced
-        </CheckboxA>
-        <span className="dib w2 flex-none" />
+        <span className="dib w1 flex-none" />
         <HiddenContainer isVisible={showAdvancedControls}>
           <RangeA
             value={bpm}
@@ -888,7 +881,7 @@ export default function KeySeq() {
             Undo
           </ButtonA>
         </HiddenContainer>
-        <span className="dib w2 flex-none" />
+        <span className="dib w1 flex-none" />
         <HiddenContainer isVisible={showAdvancedControls}>
           <ButtonA
             disabled={!showAdvancedControls || sequence === initialState.sequences[state.sequencesIndex]}
@@ -907,6 +900,16 @@ export default function KeySeq() {
         </HiddenContainer>
         <span className="dib w2 flex-auto flex-shrink-0" />
         <GainRange />
+      </div>
+      <div className="absolute w-100 bottom-0 pa3 flex justify-end">
+        <HiddenContainer isVisible={true}>
+          <CheckboxA
+            checked={showAdvancedControls}
+            onChange={() => setShowAdvancedControls(!showAdvancedControls)}
+          >
+            Advanced
+          </CheckboxA>
+        </HiddenContainer>
       </div>
     </div>
   );
