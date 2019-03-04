@@ -1,17 +1,10 @@
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { GainContext } from './components/GainRange';
+import { useLocalStorageState } from './effects/useLocalStorageState';
 import { f } from './utils/function';
 import audioContext from './webaudio/audioContext';
 
 const KeySeq = React.lazy(() => import('./KeySeq'));
-
-const gainLocalStorageKey = 'gain';
-
-function getInitialGain() {
-  const gain = parseFloat(localStorage.getItem(gainLocalStorageKey));
-
-  return gain >= 0 && gain <= 1 ? gain : 1;
-}
 
 const gainNode = f(() => {
   const gainNode = audioContext.createGain();
@@ -22,12 +15,10 @@ const gainNode = f(() => {
 });
 
 function App() {
-  const [gain, setGain] = useState(getInitialGain);
+  const [gain, setGain] = useLocalStorageState('gain', 1);
 
   useEffect(function () {
     gainNode.gain.value = Math.pow(gain, 1.6);
-
-    localStorage.setItem(gainLocalStorageKey, gain);
   }, [gain]);
 
   return (
