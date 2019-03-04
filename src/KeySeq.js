@@ -224,10 +224,7 @@ const [reducer, initialState, getCurrentSequence, getKeyState] = f(() => {
     // undo stack until the user has finished editing the sequence. so we store
     // the value here in the meantime.
     sequencesBeforeCurrentEdit: null,
-    undoStack: stack.create(32),
-    // the UI was getting a bit complicated so advanced features can be hidden
-    // using this setting.
-    showAdvancedControls: false
+    undoStack: stack.create(32)
   };
 
   return [reducer, initialState, getCurrentSequence, getKeyState];
