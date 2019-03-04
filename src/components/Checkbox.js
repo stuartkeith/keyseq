@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function Checkbox({ className, checked, onChange, children }) {
+export function Checkbox({ className = '', checked, onChange, children }) {
   return (
     <label
       className={`relative ${className}`}
