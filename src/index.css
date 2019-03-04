@@ -44,3 +44,7 @@ body,
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+.w-5rem {
+  width: 5rem;
+}
