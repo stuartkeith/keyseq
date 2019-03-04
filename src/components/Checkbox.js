@@ -3,7 +3,7 @@ import React from 'react';
 export function Checkbox({ className = '', checked, onChange, children }) {
   return (
     <label
-      className={`relative ${className}`}
+      className={`relative dib ${className}`}
     >
       <input
         type="checkbox"
