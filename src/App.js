@@ -14,6 +14,14 @@ const gainNode = f(() => {
   return gainNode;
 });
 
+function FallbackMessage() {
+  return (
+    <div className="bg-dark-gray white h-100 flex justify-center items-center">
+      <p>Please wait...</p>
+    </div>
+  );
+}
+
 function App() {
   const [gain, setGain] = useLocalStorageState('gain', 1);
 
@@ -22,7 +30,7 @@ function App() {
   }, [gain]);
 
   return (
-    <Suspense fallback={<p>Loading...</p>}>
+    <Suspense fallback={<FallbackMessage />}>
       <GainContext.Provider value={{ gain, setGain, gainNode }}>
         <KeySeq />
       </GainContext.Provider>
