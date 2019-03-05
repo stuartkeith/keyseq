@@ -18,8 +18,7 @@ function numberToPercentageString(number) {
   return `${Math.floor(number * 100)}%`;
 }
 
-// generate colours for a column dynamically - each column has a background,
-// foreground, and text colour.
+// generate background/foreground colours for a column dynamically.
 function generateColumnColorSet(index, lightnessModifier) {
   const startDegree = 214;
   const degreeStep = 25;
@@ -29,8 +28,7 @@ function generateColumnColorSet(index, lightnessModifier) {
 
   return {
     background: `hsl(${hue}, ${saturation}%, ${80 + lightnessModifier}%)`,
-    foreground: `hsl(${hue}, ${saturation}%, ${64 + lightnessModifier}%)`,
-    text: `hsl(${hue}, ${saturation}%, 19%)`,
+    foreground: `hsl(${hue}, ${saturation}%, ${64 + lightnessModifier}%)`
   };
 }
 
@@ -625,8 +623,7 @@ function VerticalMeter({ colors, scale, children }) {
     <div
       className="flex-auto-basis relative flex justify-center items-center z-0"
       style={{
-        backgroundColor: colors.background,
-        color: colors.text
+        backgroundColor: colors.background
       }}
     >
       <div
@@ -664,7 +661,7 @@ function HiddenContainer({ direction = -1, staggerVisible = 0, isVisible, childr
 function KeyLabel({ width = 2, children }) {
   return (
     <div
-      className={`flex-none flex justify-center items-center f5 h2 ba br2 mid-gray b w${width}`}
+      className={`flex-none flex justify-center items-center f5 h2 ba br2 b w${width}`}
     >
       {children}
     </div>
@@ -804,13 +801,16 @@ export default function KeySeq() {
           );
         })}
       </div>
-      <div className="absolute absolute--fill flex flex-column justify-center items-center pointer-events-none">
-        <div className="f3 tc dark-gray">
+      <div className="absolute absolute--fill flex flex-column justify-center items-center pointer-events-none dark-gray">
+        <div className="f3 tc">
           <p className="ma0 mb2 b">{selectedColumn.label}</p>
           <p className="ma0 mb4 tabular-nums">{selectedColumn.toString(selectedColumnValue)}</p>
         </div>
         <div className="flex box-shadow-1">
           {keyState.map(function (value, index) {
+            const cellValue = selectedColumn.normalise(sequence[index][selectedColumn.key]);
+            const cellColors = selectedColumn.colors[index % selectedColumn.colors.length];
+
             const containerStyle = {
               opacity: index === sequencerIndex ? '1' : '0.55',
               width: '66px',
@@ -825,8 +825,6 @@ export default function KeySeq() {
               transition: 'transform 173ms',
             };
 
-            const cellValue = selectedColumn.normalise(sequence[index][selectedColumn.key]);
-
             return (
               <div
                 key={index}
@@ -834,7 +832,7 @@ export default function KeySeq() {
                 style={containerStyle}
               >
                 <VerticalMeter
-                  colors={selectedColumn.colors[index % selectedColumn.colors.length]}
+                  colors={cellColors}
                   scale={cellValue}
                 >
                   <div
