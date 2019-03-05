@@ -797,7 +797,7 @@ export default function KeySeq() {
   }, [mouseX, mouseY]);
 
   return (
-    <div className="h-100 relative overflow-hidden">
+    <>
       <div className="absolute absolute--fill flex mv4" ref={mouseRef}>
         {visibleColumns.map(function (column, index) {
           const scale = column === selectedColumn ? selectedColumn.normalise(selectedColumnValue) : 0;
@@ -969,6 +969,6 @@ export default function KeySeq() {
           Advanced
         </CheckboxA>
       </div>
-    </div>
+    </>
   );
 };
