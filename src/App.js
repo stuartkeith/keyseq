@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
 import { GainContext } from './components/GainRange';
-import { useLocalStorageState } from './effects/useLocalStorageState';
+import { useLocalStorageState } from './hooks/useLocalStorageState';
 import { f } from './utils/function';
 import audioContext from './webaudio/audioContext';
 
