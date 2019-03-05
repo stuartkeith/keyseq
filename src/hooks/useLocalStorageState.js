@@ -4,7 +4,9 @@ function localStorageGetItemSafe(key, defaultValue) {
   let value;
 
   try {
-    value = JSON.parse(localStorage.getItem(key));
+    const localStorageValue = localStorage.getItem(key);
+
+    value = localStorageValue !== null ? JSON.parse(localStorageValue) : defaultValue;
   } catch (e) {
     value = defaultValue;
   }
