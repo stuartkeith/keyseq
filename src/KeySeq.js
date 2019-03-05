@@ -836,13 +836,14 @@ export default function KeySeq() {
                 <VerticalMeter
                   colors={selectedColumn.colors[index % selectedColumn.colors.length]}
                   scale={cellValue}
-                />
-                <div
-                  className="absolute absolute--fill flex justify-center items-center f4"
-                  style={labelStyle}
                 >
-                  {sequenceKeys[index].label}
-                </div>
+                  <div
+                    className="absolute absolute--fill flex justify-center items-center f4"
+                    style={labelStyle}
+                  >
+                    {sequenceKeys[index].label}
+                  </div>
+                </VerticalMeter>
               </div>
             );
           })}
