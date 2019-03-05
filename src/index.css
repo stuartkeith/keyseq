@@ -48,3 +48,7 @@ body,
 .w-5rem {
   width: 5rem;
 }
+
+.grid-justify-start {
+  justify-self: start;
+}

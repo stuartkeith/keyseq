@@ -642,18 +642,31 @@ function VerticalMeter({ colors, scale, children }) {
   );
 }
 
-function HiddenContainer({ isVisible, children }) {
+function HiddenContainer({ direction = -1, staggerVisible = 0, isVisible, children }) {
+  const yRem = isVisible ? 0 : direction * 2;
+  const delayMs = isVisible ? staggerVisible * 198 : 0;
+
   return (
     <div className="flex-none">
       <div
         style={{
           opacity: isVisible ? '1' : '0',
-          transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
-          transition: 'all 333ms ease-out'
+          transform: isVisible ? 'translateY(0)' : `translateY(${yRem}rem)`,
+          transition: `all 333ms ease-out ${delayMs}ms`
         }}
       >
         {children}
       </div>
+    </div>
+  );
+}
+
+function KeyLabel({ width = 2, children }) {
+  return (
+    <div
+      className={`flex-none flex justify-center items-center f5 h2 ba br2 mid-gray b w${width}`}
+    >
+      {children}
     </div>
   );
 }
@@ -758,7 +771,7 @@ export default function KeySeq() {
       return;
     }
 
-    if ((code === 'ArrowUp' || code === 'ArrowDown') && isDown) {
+    if (code === 'ArrowUp' && isDown) {
       dispatch({
         type: 'randomiseSequence',
         selectedColumn
@@ -777,7 +790,7 @@ export default function KeySeq() {
   }, [mouseX, mouseY]);
 
   return (
-    <div className="h-100 relative bg-dark-gray">
+    <div className="h-100 relative bg-dark-gray overflow-hidden">
       <div className="absolute absolute--fill flex mv4" ref={mouseRef}>
         {visibleColumns.map(function (column, index) {
           const scale = column === selectedColumn ? selectedColumn.normalise(selectedColumnValue) : 0;
@@ -834,24 +847,24 @@ export default function KeySeq() {
             );
           })}
         </div>
-        <HiddenContainer isVisible={showAdvancedControls}>
-          <div className="flex mt4">
+        <div className="h2" />
+        <HiddenContainer direction={1} staggerVisible={1} isVisible={showAdvancedControls}>
+          <div className="flex">
             {sequencesIndexKeys.map((sequencesIndexKey, index) => (
-              <div
-                key={sequencesIndexKey.label}
-                className={`
-                  flex-none flex justify-center items-center f5 w2 h2 ba br2 mid-gray b
-                  ${index > 0 ? 'ml3' : ''}
-                `}
-                style={{
-                  opacity: state.sequencesIndex === index ? '1' : '0.25',
-                  transform: state.sequencesIndex === index ? 'translate3d(0, 10%, 0)' : '',
-                  transition: 'opacity 293ms, transform 153ms',
-                  willChange: 'opacity'
-                }}
-              >
-                {sequencesIndexKey.label}
-              </div>
+              <React.Fragment key={sequencesIndexKey.label}>
+                {index > 0 ? <span className="dib w1 flex-none" /> : null}
+                <div
+                  className="flex-none"
+                  style={{
+                    opacity: state.sequencesIndex === index ? '1' : '0.25',
+                    transform: state.sequencesIndex === index ? 'translate3d(0, 10%, 0)' : '',
+                    transition: 'opacity 293ms, transform 153ms',
+                    willChange: 'opacity'
+                  }}
+                >
+                  <KeyLabel>{sequencesIndexKey.label}</KeyLabel>
+                </div>
+              </React.Fragment>
             ))}
           </div>
         </HiddenContainer>
@@ -917,15 +930,35 @@ export default function KeySeq() {
         <span className="dib w2 flex-auto flex-shrink-0" />
         <GainRange />
       </div>
-      <div className="absolute w-100 bottom-0 pa3 flex justify-end">
-        <HiddenContainer isVisible={true}>
-          <CheckboxA
-            checked={showAdvancedControls}
-            onChange={() => setShowAdvancedControls(!showAdvancedControls)}
+      <div className="absolute w-100 bottom-0 pa3 flex items-end">
+        <HiddenContainer direction={1} staggerVisible={2} isVisible={!showAdvancedControls}>
+          <div
+            className="pb4 mid-gray"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'auto 1fr',
+              gap: '1rem',
+              alignItems: 'center',
+              justifyItems: 'center'
+            }}
           >
-            Advanced
-          </CheckboxA>
+            <KeyLabel width="3">Shift</KeyLabel>
+            <p className="ma0 grid-justify-start">Invert</p>
+            <KeyLabel>&#8593;</KeyLabel>
+            <p className="ma0 grid-justify-start">Randomise</p>
+            <KeyLabel>&#8592;</KeyLabel>
+            <p className="ma0 grid-justify-start">Move left</p>
+            <KeyLabel>&#8594;</KeyLabel>
+            <p className="ma0 grid-justify-start">Move right</p>
+          </div>
         </HiddenContainer>
+        <span className="dib w2 flex-auto flex-shrink-0" />
+        <CheckboxA
+          checked={showAdvancedControls}
+          onChange={() => setShowAdvancedControls(!showAdvancedControls)}
+        >
+          Advanced
+        </CheckboxA>
       </div>
     </div>
   );
