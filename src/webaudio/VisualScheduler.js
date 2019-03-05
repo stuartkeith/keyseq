@@ -45,6 +45,10 @@ class VisualScheduler {
 
     this.update();
   }
+
+  stop() {
+    cancelAnimationFrame(this.animationFrameId);
+  }
 }
 
 export default VisualScheduler;

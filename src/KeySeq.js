@@ -609,11 +609,21 @@ function useSequencer(bpm, swing, isPlaying, sequence, destinationNode) {
     setIndex(value);
   };
 
-  if (isPlaying) {
-    scheduler.start();
-  } else {
-    scheduler.stop();
-  }
+  useEffect(function () {
+    if (isPlaying) {
+      scheduler.start();
+    } else {
+      scheduler.stop();
+    }
+  }, [isPlaying]);
+
+  // stop everything when component is removed
+  useEffect(function () {
+    return function () {
+      scheduler.stop();
+      visualScheduler.stop();
+    };
+  }, []);
 
   return [index];
 }
