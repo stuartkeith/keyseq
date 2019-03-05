@@ -628,23 +628,22 @@ function useSequencer(bpm, swing, isPlaying, sequence, destinationNode) {
   return [index];
 }
 
-function VerticalMeter({ colors, scale, children }) {
+function VerticalMeter({ colors, scale }) {
   return (
     <div
-      className="flex-auto-basis relative flex justify-center items-center z-0"
+      className="flex-auto-basis relative"
       style={{
         backgroundColor: colors.background
       }}
     >
       <div
-        className="absolute absolute--fill z-minus-1"
+        className="absolute absolute--fill"
         style={{
           backgroundColor: colors.foreground,
           transform: `scale3d(1, ${scale}, 1)`,
           transformOrigin: '100% 100%'
         }}
       />
-      {children}
     </div>
   );
 }
@@ -844,14 +843,13 @@ export default function KeySeq() {
                 <VerticalMeter
                   colors={cellColors}
                   scale={cellValue}
+                />
+                <div
+                  className="absolute absolute--fill flex justify-center items-center f4"
+                  style={labelStyle}
                 >
-                  <div
-                    className="absolute absolute--fill flex justify-center items-center f4"
-                    style={labelStyle}
-                  >
-                    {sequenceKeys[index].label}
-                  </div>
-                </VerticalMeter>
+                  {sequenceKeys[index].label}
+                </div>
               </div>
             );
           })}
