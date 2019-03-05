@@ -3,6 +3,7 @@ import { ButtonA } from './components/ButtonA';
 import { CheckboxA } from './components/CheckboxA';
 import { GainContext, GainRange } from './components/GainRange';
 import { RangeA } from './components/RangeA';
+import { useLocalStorageState } from './effects/useLocalStorageState';
 import { useRefLazy } from './effects/useRefLazy';
 import { useViewport } from './effects/useViewport';
 import { arrayReplaceAt, arraySetAt } from './utils/array';
@@ -662,7 +663,7 @@ export default function KeySeq() {
   const [bpm, setBpm] = useState(96);
   const [swing, setSwing] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
+  const [showAdvancedControls, setShowAdvancedControls] = useLocalStorageState('KeySeq.showAdvancedControls', false);
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
