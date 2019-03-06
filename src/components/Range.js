@@ -16,7 +16,7 @@ export function Range({ value, disabled, min, max, step, containerClassName = ''
       {children}
       <input
         type="range"
-        className="input-range-reset absolute absolute--fill w-100"
+        className="input-range-reset absolute absolute--fill w-100 h-100"
         disabled={disabled}
         value={value}
         min={min}
