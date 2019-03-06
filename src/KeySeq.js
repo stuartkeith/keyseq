@@ -447,7 +447,7 @@ function useMouse(elementRef, viewportDimensions) {
       boundingClientRect.width,
       boundingClientRect.height
     ];
-  }, [viewportDimensions]);
+  }, [viewportDimensions.width, viewportDimensions.height]);
 
   useEffect(function () {
     const onMouseMove = function (event) {
