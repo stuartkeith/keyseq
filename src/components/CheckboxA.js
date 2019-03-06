@@ -12,7 +12,14 @@ export function CheckboxA({ checked, children, ...props }) {
       <LabelA variant="icon">
         {children}
         &nbsp;&nbsp;
-        <span className={`${checked ? '' : 'o-20'}`}>&#10003;</span>
+        <span
+          style={{
+            opacity: checked ? '1' : '0.2',
+            willChange: 'opacity'
+          }}
+        >
+          &#10003;
+        </span>
       </LabelA>
     </Checkbox>
   );

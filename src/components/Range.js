@@ -4,15 +4,14 @@ export function Range({ value, disabled, min, max, step, containerClassName = ''
   const scale = (value - min) / (max - min);
 
   const sliderStyle = {
-    transformOrigin: '0 100%',
-    transform: `translate3d(${(1 - scale) * -100}%, 0, 0)`
+    transformOrigin: '0 0',
+    transform: `scaleX(${scale})`,
+    willChange: 'transform'
   };
 
   return (
-    <div className={`relative z-0 tabular-nums ${containerClassName}`}>
-      <div className="absolute absolute--fill overflow-hidden w-100 h-100 z-minus-1">
-        <div className={`absolute absolute--fill ${sliderClassName}`} style={sliderStyle} />
-      </div>
+    <div className={`relative tabular-nums overflow-hidden ${containerClassName}`}>
+      <div className={`absolute absolute--fill ${sliderClassName}`} style={sliderStyle} />
       {children}
       <input
         type="range"

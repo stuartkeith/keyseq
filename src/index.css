@@ -50,3 +50,7 @@ body {
 .grid-justify-start {
   justify-self: start;
 }
+
+.force-layer {
+  transform: translateZ(0);
+}

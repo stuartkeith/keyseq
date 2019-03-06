@@ -631,7 +631,7 @@ function useSequencer(bpm, swing, isPlaying, sequence, destinationNode) {
 function VerticalMeter({ colors, scale }) {
   return (
     <div
-      className="flex-auto-basis relative"
+      className="flex-auto-basis relative force-layer"
       style={{
         backgroundColor: colors.background
       }}
@@ -641,7 +641,8 @@ function VerticalMeter({ colors, scale }) {
         style={{
           backgroundColor: colors.foreground,
           transform: `scale3d(1, ${scale}, 1)`,
-          transformOrigin: '100% 100%'
+          transformOrigin: '100% 100%',
+          willChange: 'transform'
         }}
       />
     </div>
@@ -653,12 +654,13 @@ function HiddenContainer({ direction = -1, staggerVisible = 0, isVisible, childr
   const delayMs = isVisible ? staggerVisible * 198 : 0;
 
   return (
-    <div className="flex-none">
+    <div className="flex-none force-layer">
       <div
         style={{
           opacity: isVisible ? '1' : '0',
           transform: isVisible ? 'translateY(0)' : `translateY(${yRem}rem)`,
-          transition: `all 333ms ease-out ${delayMs}ms`
+          transition: `all 333ms ease-out ${delayMs}ms`,
+          willChange: 'opacity, transform'
         }}
       >
         {children}
@@ -876,7 +878,7 @@ export default function KeySeq() {
           </div>
         </HiddenContainer>
       </div>
-      <div className="relative pa3 flex">
+      <div className="relative pa3 flex overflow-hidden">
         <ButtonA
           onClick={() => setIsPlaying(!isPlaying)}
         >
@@ -937,7 +939,7 @@ export default function KeySeq() {
         <span className="dib w2 flex-auto flex-shrink-0" />
         <GainRange />
       </div>
-      <div className="absolute w-100 bottom-0 pa3 flex items-end">
+      <div className="absolute w-100 bottom-0 pa3 flex items-end overflow-hidden">
         <HiddenContainer direction={1} staggerVisible={2} isVisible={!showAdvancedControls}>
           <div
             className="pb4 mid-gray"

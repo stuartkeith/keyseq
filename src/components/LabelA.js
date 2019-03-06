@@ -13,13 +13,18 @@ export function LabelA({ disabled, variant = 'textOnly', children }) {
   }
 
   const className = `
-    dib f6 pa2 box-shadow-1 w-5rem
-    ${disabled ? 'moon-gray' : 'dark-gray'}
+    dib f6 pa2 box-shadow-1 w-5rem dark-gray
     ${variantClassName}
   `;
 
   return (
-    <span className={className}>
+    <span
+      className={className}
+      style={{
+        opacity: disabled ? '0.3' : '1',
+        willChange: 'opacity'
+      }}
+    >
       {children}
     </span>
   );
