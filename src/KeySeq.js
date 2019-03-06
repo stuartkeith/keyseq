@@ -617,7 +617,7 @@ function useSequencer(bpm, swing, isPlaying, sequence, destinationNode) {
     }
   }, [isPlaying]);
 
-  // stop everything when component is removed
+  // stop everything when component is removed.
   useEffect(function () {
     return function () {
       scheduler.stop();
