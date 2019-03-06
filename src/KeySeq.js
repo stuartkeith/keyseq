@@ -428,7 +428,7 @@ const [reducer, initialState, getCurrentSequence, getKeyState] = f(() => {
   }
 });
 
-// an effect that listens to the window's mousemove events and returns mouse
+// a hook that listens to the window's mousemove events and returns mouse
 // coordinates relative to the specified element, normalised to a range of 0
 // to 1.
 function useMouse(elementRef, viewportDimensions) {
@@ -436,7 +436,8 @@ function useMouse(elementRef, viewportDimensions) {
   const elementOffset = useRef();
 
   // only remeasure the element when the viewport is resized.
-  // we can use a ref here as the new values are only needed on the next event.
+  // we can use a ref here as the new values are only needed on the next
+  // mouse event.
   useEffect(function () {
     const boundingClientRect = elementRef.current.getBoundingClientRect();
 
@@ -471,7 +472,7 @@ function useMouse(elementRef, viewportDimensions) {
   return position;
 }
 
-// an effect that listens to the window's keyboard events, ignoring repeated
+// a hook that listens to the window's keyboard events, ignoring repeated
 // keydown events. also handles the window losing focus while keys are being
 // held, to avoid stuck keys.
 function useKeyboard(callback, inputs) {
