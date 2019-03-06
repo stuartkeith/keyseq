@@ -1,9 +1,11 @@
 import { useRef } from 'react';
 
-export function useRefLazy(initFunction) {
-  const ref = useRef(null);
+const notInitialised = Symbol();
 
-  if (ref.current === null) {
+export function useRefLazy(initFunction) {
+  const ref = useRef(notInitialised);
+
+  if (ref.current === notInitialised) {
     ref.current = initFunction();
   }
 
