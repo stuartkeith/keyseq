@@ -19,3 +19,13 @@ export function arrayShiftBy(array, direction) {
     ...array.slice(0, index)
   ];
 }
+
+export function mapRange(limit, fn) {
+  const result = new Array(limit);
+
+  for (let i = 0; i < limit; i++) {
+    result[i] = fn(i);
+  }
+
+  return result;
+}

@@ -1,4 +1,5 @@
-import React, { useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import React, { forwardRef, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { animated, config, useSpring } from 'react-spring';
 import { ButtonA } from './components/ButtonA';
 import { CheckboxA } from './components/CheckboxA';
 import { GainContext, GainRange } from './components/GainRange';
@@ -6,7 +7,7 @@ import { RangeA } from './components/RangeA';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
 import { useRefLazy } from './hooks/useRefLazy';
 import { useViewport } from './hooks/useViewport';
-import { arrayReplaceAt, arraySetAt } from './utils/array';
+import { arrayReplaceAt, arraySetAt, mapRange } from './utils/array';
 import { chain, f, passThrough } from './utils/function';
 import { inRange } from './utils/number';
 import * as stack from './utils/stack';
@@ -18,27 +19,22 @@ function numberToPercentageString(number) {
   return `${Math.floor(number * 100)}%`;
 }
 
-// generate background/foreground colours for a column dynamically.
-function generateColumnColorSet(index, lightnessModifier) {
+// dynamically generate background/foreground colours for a column.
+function generateColumnColorSet(index) {
   const startDegree = 214;
   const degreeStep = 25;
   const saturation = 47;
 
   const hue = startDegree + (degreeStep * index);
+  const backgroundLightness = 80;
+  const foregroundLightness = 64;
 
   return {
-    background: `hsl(${hue}, ${saturation}%, ${80 + lightnessModifier}%)`,
-    foreground: `hsl(${hue}, ${saturation}%, ${64 + lightnessModifier}%)`
+    background: `hsl(${hue}, ${saturation}%, ${backgroundLightness}%)`,
+    foreground: `hsl(${hue}, ${saturation}%, ${foregroundLightness}%)`,
+    border: `hsl(${hue}, ${saturation}%, ${foregroundLightness - 9}%)`,
+    text: `hsl(${hue}, ${saturation}%, 23%)`
   };
-}
-
-// we need two sets of colours - the second is used when two columns are
-// displayed next to each other.
-function generateColumnColors(index) {
-  return [
-    generateColumnColorSet(index, 0),
-    generateColumnColorSet(index, 3)
-  ];
 }
 
 const sequenceKeys = [
@@ -61,6 +57,13 @@ const sequencesIndexKeys = [
 
 const KEYBOARD_MODE_NORMAL = 'KEYBOARD_MODE_NORMAL';
 const KEYBOARD_MODE_INVERT = 'KEYBOARD_MODE_INVERT';
+
+// react-transition config for key-based springs (needs to feel responsive
+// and snappy).
+const springKeyConfig = {
+  tension: 910,
+  friction: 20
+};
 
 const columnKeys = ['note', 'octave', 'gain', 'decay', 'waveform'];
 
@@ -629,11 +632,13 @@ function useSequencer(bpm, swing, isPlaying, sequence, destinationNode) {
   return [index];
 }
 
-function VerticalMeter({ colors, scale }) {
+const VerticalMeter = forwardRef(({ className = '', style, colors, scale }, ref) => {
   return (
     <div
-      className="flex-auto-basis relative force-layer"
+      ref={ref}
+      className={`force-layer ${className}`}
       style={{
+        ...style,
         backgroundColor: colors.background
       }}
     >
@@ -648,24 +653,26 @@ function VerticalMeter({ colors, scale }) {
       />
     </div>
   );
-}
+});
+
+const AnimatedVerticalMeter = animated(VerticalMeter);
 
 function HiddenContainer({ direction = -1, staggerVisible = 0, isVisible, children }) {
   const yRem = isVisible ? 0 : direction * 2;
-  const delayMs = isVisible ? staggerVisible * 198 : 0;
+
+  const props = useSpring({
+    delay: isVisible ? staggerVisible * 312 : 0,
+    opacity: isVisible ? 1 : 0,
+    transform: `translateY(${yRem}rem)`,
+    willChange: 'opacity, transform',
+    config: config.wobbly
+  });
 
   return (
-    <div className="flex-none force-layer">
-      <div
-        style={{
-          opacity: isVisible ? '1' : '0',
-          transform: isVisible ? 'translateY(0)' : `translateY(${yRem}rem)`,
-          transition: `all 333ms ease-out ${delayMs}ms`,
-          willChange: 'opacity, transform'
-        }}
-      >
+    <div className="flex-none">
+      <animated.div style={props}>
         {children}
-      </div>
+      </animated.div>
     </div>
   );
 }
@@ -697,16 +704,26 @@ export default function KeySeq() {
   const viewportDimensions = useViewport();
   const [mouseX, mouseY] = useMouse(mouseRef, viewportDimensions);
 
+  const maxColumnCount = Math.max(columnKeys.length, columnKeysAdvanced.length);
+  const minColumnCount = Math.min(columnKeys.length, columnKeysAdvanced.length);
   const visibleColumnKeys = showAdvancedControls ? columnKeysAdvanced : columnKeys;
+  const visibleColumnCount = visibleColumnKeys.length;
 
-  const visibleColumns = useMemo(() => {
-    return visibleColumnKeys.map((key, i) => ({
-      ...columns[key],
-      colors: generateColumnColors(i)
-    }));
-  }, [visibleColumnKeys]);
+  const visibleColumns = useMemo(() => visibleColumnKeys.map(key => columns[key]), [visibleColumnKeys]);
 
-  const selectedColumnIndex = inRange(Math.floor(mouseX * visibleColumns.length), 0, visibleColumns.length - 1);
+  const columnColors = useMemo(() => {
+    return mapRange(maxColumnCount, index => generateColumnColorSet(index));
+  }, [maxColumnCount]);
+
+  // we want to only animate the vertical meters' transform in order to avoid
+  // repaints, for smooth animation. so set their width to be wide enough to be
+  // rendered without gaps when the least number of meters are shown.
+  // add a bit extra to account for the wobbly transition overshoot.
+  const verticalMeterWidth = Math.ceil((viewportDimensions.width / minColumnCount) * 1.25);
+  // then the transform will be based off this offset.
+  const verticalMeterOffset = viewportDimensions.width / visibleColumnCount;
+
+  const selectedColumnIndex = inRange(Math.floor(mouseX * visibleColumnCount), 0, visibleColumnCount - 1);
   const selectedColumn = visibleColumns[selectedColumnIndex];
   const selectedColumnValue = selectedColumn.denormalise(mouseY);
 
@@ -799,87 +816,33 @@ export default function KeySeq() {
   }, [mouseX, mouseY]);
 
   return (
-    <>
-      <div className="absolute absolute--fill flex mv4" ref={mouseRef}>
-        {visibleColumns.map(function (column, index) {
-          const scale = column === selectedColumn ? selectedColumn.normalise(selectedColumnValue) : 0;
+    <div className="absolute absolute--fill mv4 flex flex-column items-center justify-center dark-gray overflow-hidden" ref={mouseRef}>
+      {mapRange(maxColumnCount, function (columnIndex) {
+        const column = visibleColumns[columnIndex];
+        const colors = columnColors[columnIndex];
+        const scale = column === selectedColumn ? selectedColumn.normalise(selectedColumnValue) : 0;
 
-          return (
-            <VerticalMeter
-              key={index}
-              colors={column.colors[0]}
-              scale={scale}
-            />
-          );
-        })}
-      </div>
-      <div className="absolute absolute--fill flex flex-column justify-center items-center pointer-events-none dark-gray">
-        <div className="f3 tc">
-          <p className="ma0 mb2 b">{selectedColumn.label}</p>
-          <p className="ma0 mb4 tabular-nums">{selectedColumn.toString(selectedColumnValue)}</p>
-        </div>
-        <div className="flex box-shadow-1">
-          {keyState.map(function (value, index) {
-            const cellValue = selectedColumn.normalise(sequence[index][selectedColumn.key]);
-            const cellColors = selectedColumn.colors[index % selectedColumn.colors.length];
+        const props = useSpring({
+          immediate: !viewportDimensions.hasTimedOut,
+          transform: `translate3d(${verticalMeterOffset * columnIndex}px, 0, 0)`,
+          width: verticalMeterWidth,
+          config: {
+            tension: 120,
+            friction: 12
+          }
+        });
 
-            const containerStyle = {
-              opacity: index === sequencerIndex ? '1' : '0.55',
-              width: '66px',
-              height: '66px',
-              willChange: 'opacity'
-            };
-
-            const y = value ? '10%' : '0';
-
-            const labelStyle = {
-              transform: `translate3d(0, ${y}, 0)`,
-              transition: 'transform 173ms',
-            };
-
-            return (
-              <div
-                key={index}
-                className="relative flex overflow-hidden"
-                style={containerStyle}
-              >
-                <VerticalMeter
-                  colors={cellColors}
-                  scale={cellValue}
-                />
-                <div
-                  className="absolute absolute--fill flex justify-center items-center f4"
-                  style={labelStyle}
-                >
-                  {sequenceKeys[index].label}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="h2" />
-        <HiddenContainer direction={1} staggerVisible={1} isVisible={showAdvancedControls}>
-          <div className="flex">
-            {sequencesIndexKeys.map((sequencesIndexKey, index) => (
-              <React.Fragment key={sequencesIndexKey.label}>
-                {index > 0 ? <span className="dib w1 flex-none" /> : null}
-                <div
-                  className="flex-none"
-                  style={{
-                    opacity: state.sequencesIndex === index ? '1' : '0.25',
-                    transform: state.sequencesIndex === index ? 'translate3d(0, 10%, 0)' : '',
-                    transition: 'opacity 293ms, transform 153ms',
-                    willChange: 'opacity'
-                  }}
-                >
-                  <KeyLabel>{sequencesIndexKey.label}</KeyLabel>
-                </div>
-              </React.Fragment>
-            ))}
-          </div>
-        </HiddenContainer>
-      </div>
-      <div className="relative pa3 flex overflow-hidden">
+        return (
+          <AnimatedVerticalMeter
+            key={columnIndex}
+            className="absolute left-0 h-100"
+            colors={colors}
+            scale={scale}
+            style={props}
+          />
+        );
+      })}
+      <div className="flex pa3 w-100 absolute top-0">
         <ButtonA
           onClick={() => setIsPlaying(!isPlaying)}
         >
@@ -932,6 +895,7 @@ export default function KeySeq() {
         <span className="dib w1 flex-none" />
         <HiddenContainer isVisible={showAdvancedControls}>
           <ButtonA
+            disabled={!showAdvancedControls}
             onClick={() => dispatch({ type: 'randomiseAll' })}
           >
             Random
@@ -940,10 +904,81 @@ export default function KeySeq() {
         <span className="dib w2 flex-auto flex-shrink-0" />
         <GainRange />
       </div>
-      <div className="absolute w-100 bottom-0 pa3 flex items-end overflow-hidden">
-        <HiddenContainer direction={1} staggerVisible={2} isVisible={!showAdvancedControls}>
+      <div className="f3 tc pointer-events-none relative">
+        <p className="ma0 mb2 b">{selectedColumn.label}</p>
+        <p className="ma0 mb4 tabular-nums">{selectedColumn.toString(selectedColumnValue)}</p>
+      </div>
+      <div className="flex pointer-events-none relative">
+        {keyState.map(function (value, index) {
+          const cellValue = selectedColumn.normalise(sequence[index][selectedColumn.key]);
+          const cellColors = columnColors[selectedColumnIndex];
+
+          const y = value ? 6 : 0;
+
+          const props = useSpring({
+            transform: `translateY(${y}px)`,
+            config: springKeyConfig,
+          });
+
+          return (
+            <React.Fragment key={index}>
+              {index > 0 ? <span className="dib w1 flex-none" /> : null}
+              <animated.div
+                className="relative flex b justify-center items-center f4 ba bw1 br2 overflow-hidden"
+                style={{
+                  ...props,
+                  borderColor: cellColors.border,
+                  color: cellColors.text,
+                  width: '66px',
+                  height: '66px',
+                  opacity: index === sequencerIndex ? '1' : '0.55',
+                  willChange: 'opacity, transform'
+                }}
+              >
+                <VerticalMeter
+                  className="absolute absolute--fill"
+                  colors={cellColors}
+                  scale={cellValue}
+                />
+                <span className="relative">{sequenceKeys[index].label}</span>
+              </animated.div>
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div className="h2" />
+      <HiddenContainer direction={1} staggerVisible={1} isVisible={showAdvancedControls}>
+        <div className="flex pointer-events-none">
+          {sequencesIndexKeys.map((sequencesIndexKey, index) => {
+            const props = useSpring({
+              opacity: state.sequencesIndex === index ? 1 : 0.25,
+              transform: state.sequencesIndex === index ? 'translateY(10%)' : 'translateY(0%)',
+              willChange: 'opacity, transform',
+              config: springKeyConfig
+            });
+
+            return (
+              <React.Fragment key={sequencesIndexKey.label}>
+                {index > 0 ? <span className="dib w1 flex-none" /> : null}
+                <animated.div
+                  className="flex-none"
+                  style={props}
+                >
+                  <KeyLabel>{sequencesIndexKey.label}</KeyLabel>
+                </animated.div>
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </HiddenContainer>
+      <div className="flex items-end pa3 w-100 absolute bottom-0">
+        <HiddenContainer
+          direction={1}
+          staggerVisible={1}
+          isVisible={!showAdvancedControls}
+        >
           <div
-            className="pb4 mid-gray"
+            className="mid-gray"
             style={{
               display: 'grid',
               gridTemplateColumns: 'auto 1fr',
@@ -970,6 +1005,6 @@ export default function KeySeq() {
           Advanced
         </CheckboxA>
       </div>
-    </>
+    </div>
   );
 };
