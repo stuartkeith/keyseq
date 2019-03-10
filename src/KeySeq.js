@@ -218,6 +218,8 @@ const [reducer, initialState, getCurrentSequence, getKeyState] = f(() => {
     // for example, the keyboard mode can invert the keys held.
     physicalKeyState: sequenceKeys.map(() => false),
     keyboardMode: KEYBOARD_MODE_NORMAL,
+    mouseX: 0,
+    mouseY: 0,
     // multiple sequences are stored in an array, with an index determining the
     // currently edited sequence.
     sequences: sequencesIndexKeys.map(() => emptySequence),
@@ -353,7 +355,11 @@ const [reducer, initialState, getCurrentSequence, getKeyState] = f(() => {
       case 'keyUp':
         return getNewStateFromKeyChange(state, arraySetAt(state.physicalKeyState, action.sequenceKeysIndex, false), state.keyboardMode);
       case 'mouseMove':
-        return updateSequenceWithAction(state, action);
+        return chain(
+          state,
+          state => updateSequenceWithAction(state, action),
+          state => ({ ...state, mouseX: action.x, mouseY: action.y })
+        );
       case 'shiftSequence':
         const sequence = getCurrentSequence(state);
         const columnKey = action.selectedColumn.key;
@@ -434,9 +440,11 @@ const [reducer, initialState, getCurrentSequence, getKeyState] = f(() => {
 // a hook that listens to the window's mousemove events and returns mouse
 // coordinates relative to the specified element, normalised to a range of 0
 // to 1.
-function useMouse(elementRef, viewportDimensions) {
-  const [position, setPosition] = useState([0, 0]);
+function useMouse(elementRef, viewportDimensions, callback) {
   const elementOffset = useRef();
+  const callbackRef = useRef();
+
+  callbackRef.current = callback;
 
   // only remeasure the element when the viewport is resized.
   // we can use a ref here as the new values are only needed on the next
@@ -462,7 +470,7 @@ function useMouse(elementRef, viewportDimensions) {
       const x = inRange(offsetX / elementWidth, 0, 1);
       const y = inRange(offsetY / elementHeight, 0, 1);
 
-      setPosition([x, 1 - y]);
+      callbackRef.current(x, y);
     };
 
     window.addEventListener('mousemove', onMouseMove);
@@ -471,8 +479,6 @@ function useMouse(elementRef, viewportDimensions) {
       window.removeEventListener('mousemove', onMouseMove);
     };
   }, []);
-
-  return position;
 }
 
 // a hook that listens to the window's keyboard events, ignoring repeated
@@ -702,7 +708,6 @@ export default function KeySeq() {
 
   const mouseRef = useRef();
   const viewportDimensions = useViewport();
-  const [mouseX, mouseY] = useMouse(mouseRef, viewportDimensions);
 
   const maxColumnCount = Math.max(columnKeys.length, columnKeysAdvanced.length);
   const minColumnCount = Math.min(columnKeys.length, columnKeysAdvanced.length);
@@ -710,6 +715,18 @@ export default function KeySeq() {
   const visibleColumnCount = visibleColumnKeys.length;
 
   const visibleColumns = useMemo(() => visibleColumnKeys.map(key => columns[key]), [visibleColumnKeys]);
+
+  const getSelectedColumnInfoAtMouse = function (x, y) {
+    const selectedColumnIndex = inRange(Math.floor(x * visibleColumnCount), 0, visibleColumnCount - 1);
+    const selectedColumn = visibleColumns[selectedColumnIndex];
+    const selectedColumnValue = selectedColumn.denormalise(1 - y);
+
+    return {
+      selectedColumnIndex,
+      selectedColumn,
+      selectedColumnValue
+    };
+  };
 
   const columnColors = useMemo(() => {
     return mapRange(maxColumnCount, index => generateColumnColorSet(index));
@@ -723,11 +740,22 @@ export default function KeySeq() {
   // then the transform will be based off this offset.
   const verticalMeterOffset = viewportDimensions.width / visibleColumnCount;
 
-  const selectedColumnIndex = inRange(Math.floor(mouseX * visibleColumnCount), 0, visibleColumnCount - 1);
-  const selectedColumn = visibleColumns[selectedColumnIndex];
-  const selectedColumnValue = selectedColumn.denormalise(mouseY);
+  const {
+    selectedColumnIndex,
+    selectedColumn,
+    selectedColumnValue
+  } = getSelectedColumnInfoAtMouse(state.mouseX, state.mouseY);
 
   const keyState = getKeyState(state.physicalKeyState, state.keyboardMode);
+
+  useMouse(mouseRef, viewportDimensions, function (x, y) {
+    dispatch({
+      type: 'mouseMove',
+      x,
+      y,
+      ...getSelectedColumnInfoAtMouse(x, y)
+    });
+  });
 
   useKeyboard(function (code, isDown) {
     const sequenceKeysIndex = sequenceKeys.findIndex(sequenceKey => sequenceKey.code === code);
@@ -806,14 +834,6 @@ export default function KeySeq() {
       return;
     }
   }, [sequenceKeys, state, dispatch, selectedColumn, selectedColumnValue, showAdvancedControls]);
-
-  useEffect(function () {
-    dispatch({
-      type: 'mouseMove',
-      selectedColumn,
-      selectedColumnValue
-    });
-  }, [mouseX, mouseY]);
 
   return (
     <div className="absolute absolute--fill mv4 flex flex-column items-center justify-center dark-gray overflow-hidden" ref={mouseRef}>
