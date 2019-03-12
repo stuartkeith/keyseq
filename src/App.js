@@ -16,7 +16,7 @@ const gainNode = f(() => {
 
 function FallbackMessage() {
   return (
-    <div className="h-100 flex justify-center items-center">
+    <div className="vh-100 flex justify-center items-center">
       <p className="b f3">Loading...</p>
     </div>
   );
