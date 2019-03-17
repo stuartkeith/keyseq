@@ -1,8 +1,9 @@
 import React, { Suspense, useEffect } from 'react';
 import { GainContext } from './components/GainRange';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
-import { f } from './utils/function';
 import audioContext from './webaudio/audioContext';
+
+const f = callback => callback();
 
 const KeySeq = React.lazy(() => import('./KeySeq'));
 

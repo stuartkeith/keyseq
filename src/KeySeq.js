@@ -8,12 +8,15 @@ import { useLocalStorageState } from './hooks/useLocalStorageState';
 import { useRefLazy } from './hooks/useRefLazy';
 import { useViewport } from './hooks/useViewport';
 import { arrayReplaceAt, arraySetAt, mapRange } from './utils/array';
-import { chain, f, passThrough } from './utils/function';
+import { chain } from './utils/function';
 import { inRange } from './utils/number';
 import * as stack from './utils/stack';
 import audioContext from './webaudio/audioContext';
 import Scheduler from './webaudio/Scheduler';
 import VisualScheduler from './webaudio/VisualScheduler';
+
+const f = callback => callback();
+const passThrough = value => value;
 
 function numberToPercentageString(number) {
   return `${Math.floor(number * 100)}%`;

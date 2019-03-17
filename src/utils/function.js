@@ -7,8 +7,3 @@ export function chain(argument, ...functions) {
 
   return result;
 }
-
-// alternative to defining inline self-executing function
-export const f = callback => callback();
-
-export const passThrough = value => value;
