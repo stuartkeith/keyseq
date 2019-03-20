@@ -998,7 +998,7 @@ export default function KeySeq() {
                 <animated.div
                   className="flex-none"
                   style={{
-                    opacity: props.y.interpolate(value => 0.25 + (value * 0.75)),
+                    opacity: props.y.interpolate({ output: [0.25, 1], extrapolate: 'clamp' }),
                     transform: props.y.interpolate(value => `translateY(${value * 10}%)`),
                     willChange: 'opacity, transform'
                   }}
