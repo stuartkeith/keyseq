@@ -1,5 +1,5 @@
 import React, { forwardRef, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { animated, config, useSpring } from 'react-spring';
+import { animated, config, useSpring, useSprings } from 'react-spring';
 import { ButtonA } from './components/ButtonA';
 import { CheckboxA } from './components/CheckboxA';
 import { GainContext, GainRange } from './components/GainRange';
@@ -838,6 +838,25 @@ export default function KeySeq() {
     }
   }, [sequenceKeys, state, dispatch, selectedColumn, selectedColumnValue, showAdvancedControls]);
 
+  const columnProps = useSpring({
+    immediate: !viewportDimensions.hasTimedOut,
+    verticalMeterOffset,
+    config: {
+      tension: 120,
+      friction: 12
+    }
+  });
+
+  const keyStateProps = useSprings(keyState.length, keyState.map(value => ({
+    y: value ? 1 : 0,
+    config: springKeyConfig
+  })));
+
+  const sequencesIndexKeyProps = useSprings(sequencesIndexKeys.length, sequencesIndexKeys.map((_, i) => ({
+    y: state.sequencesIndex === i ? 1 : 0,
+    config: springKeyConfig
+  })));
+
   return (
     <div className="absolute absolute--fill mv4 flex flex-column items-center justify-center dark-gray overflow-hidden" ref={mouseRef}>
       {mapRange(maxColumnCount, function (columnIndex) {
@@ -845,23 +864,16 @@ export default function KeySeq() {
         const colors = columnColors[columnIndex];
         const scale = column === selectedColumn ? selectedColumn.normalise(selectedColumnValue) : 0;
 
-        const props = useSpring({
-          immediate: !viewportDimensions.hasTimedOut,
-          transform: `translate3d(${verticalMeterOffset * columnIndex}px, 0, 0)`,
-          width: verticalMeterWidth,
-          config: {
-            tension: 120,
-            friction: 12
-          }
-        });
-
         return (
           <AnimatedVerticalMeter
             key={columnIndex}
             className="absolute left-0 h-100"
             colors={colors}
             scale={scale}
-            style={props}
+            style={{
+              transform: columnProps.verticalMeterOffset.interpolate(value => `translateX(${value * columnIndex}px)`),
+              width: verticalMeterWidth
+            }}
           />
         );
       })}
@@ -935,13 +947,7 @@ export default function KeySeq() {
         {keyState.map(function (value, index) {
           const cellValue = selectedColumn.normalise(sequence[index][selectedColumn.key]);
           const cellColors = columnColors[selectedColumnIndex];
-
-          const y = value ? 6 : 0;
-
-          const props = useSpring({
-            transform: `translateY(${y}px)`,
-            config: springKeyConfig,
-          });
+          const props = keyStateProps[index];
 
           return (
             <React.Fragment key={index}>
@@ -949,12 +955,12 @@ export default function KeySeq() {
               <animated.div
                 className="relative flex b justify-center items-center f4 ba bw1 br2 overflow-hidden"
                 style={{
-                  ...props,
                   borderColor: cellColors.border,
                   color: cellColors.text,
                   width: '66px',
                   height: '66px',
                   opacity: index === sequencerIndex ? '1' : '0.55',
+                  transform: props.y.interpolate(value => `translateY(${value * 6}px)`),
                   willChange: 'opacity, transform'
                 }}
               >
@@ -973,19 +979,18 @@ export default function KeySeq() {
       <HiddenContainer direction={1} staggerVisible={1} isVisible={showAdvancedControls}>
         <div className="flex pointer-events-none">
           {sequencesIndexKeys.map((sequencesIndexKey, index) => {
-            const props = useSpring({
-              opacity: state.sequencesIndex === index ? 1 : 0.25,
-              transform: state.sequencesIndex === index ? 'translateY(10%)' : 'translateY(0%)',
-              willChange: 'opacity, transform',
-              config: springKeyConfig
-            });
+            const props = sequencesIndexKeyProps[index];
 
             return (
               <React.Fragment key={sequencesIndexKey.label}>
                 {index > 0 ? <span className="dib w1 flex-none" /> : null}
                 <animated.div
                   className="flex-none"
-                  style={props}
+                  style={{
+                    opacity: props.y.interpolate(value => 0.25 + (value * 0.75)),
+                    transform: props.y.interpolate(value => `translateY(${value * 10}%)`),
+                    willChange: 'opacity, transform'
+                  }}
                 >
                   <KeyLabel>{sequencesIndexKey.label}</KeyLabel>
                 </animated.div>
