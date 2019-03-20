@@ -667,19 +667,30 @@ const VerticalMeter = forwardRef(({ className = '', style, colors, scale }, ref)
 const AnimatedVerticalMeter = animated(VerticalMeter);
 
 function HiddenContainer({ direction = -1, staggerVisible = 0, isVisible, children }) {
-  const yRem = isVisible ? 0 : direction * 2;
-
-  const props = useSpring({
-    delay: isVisible ? staggerVisible * 312 : 0,
-    opacity: isVisible ? 1 : 0,
-    transform: `translateY(${yRem}rem)`,
-    willChange: 'opacity, transform',
+  // the normal useSpring will be reset on re-render, which is a problem during
+  // playback - the delay means updates are continually queued. use this form
+  // instead and update only when props have changed.
+  const [props, set] = useSpring(() => ({
+    value: isVisible ? 1 : 0,
     config: config.wobbly
-  });
+  }));
+
+  useEffect(function () {
+    set({
+      delay: isVisible ? staggerVisible * 312 : 0,
+      value: isVisible ? 1 : 0
+    });
+  }, [isVisible, staggerVisible]);
 
   return (
     <div className="flex-none">
-      <animated.div style={props}>
+      <animated.div
+        style={{
+          opacity: props.value,
+          transform: props.value.interpolate(value => `translateY(${(1 - value) * 2 * direction}rem)`),
+          willChange: 'opacity, transform'
+        }}
+      >
         {children}
       </animated.div>
     </div>
