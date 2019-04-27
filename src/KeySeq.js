@@ -2,7 +2,7 @@ import React, { forwardRef, useContext, useEffect, useMemo, useReducer, useRef, 
 import { animated, config, useSpring, useSprings } from 'react-spring';
 import { ButtonA } from './components/ButtonA';
 import { CheckboxA } from './components/CheckboxA';
-import { GainContext, GainRange } from './components/GainRange';
+import { GainNodeContext, GainRange } from './components/GainRange';
 import { RangeA } from './components/RangeA';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
 import { useRefLazy } from './hooks/useRefLazy';
@@ -708,7 +708,7 @@ function KeyLabel({ width = 2, children }) {
 }
 
 export default function KeySeq() {
-  const destinationNode = useContext(GainContext).gainNode;
+  const destinationNode = useContext(GainNodeContext);
   const [bpm, setBpm] = useState(96);
   const [swing, setSwing] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);

@@ -3,9 +3,10 @@ import { RangeA } from './RangeA';
 
 export const GainContext = createContext({
   gain: null,
-  setGain: null,
-  gainNode: null
+  setGain: null
 });
+
+export const GainNodeContext = createContext(null);
 
 export function GainRange() {
   const { gain, setGain } = useContext(GainContext);

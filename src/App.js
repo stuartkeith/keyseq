@@ -1,5 +1,5 @@
-import React, { Suspense, useEffect } from 'react';
-import { GainContext } from './components/GainRange';
+import React, { Suspense, useEffect, useMemo } from 'react';
+import { GainContext, GainNodeContext } from './components/GainRange';
 import { useLocalStorageState } from './hooks/useLocalStorageState';
 import audioContext from './webaudio/audioContext';
 
@@ -30,10 +30,19 @@ function App() {
     gainNode.gain.value = Math.pow(gain, 1.6);
   }, [gain]);
 
+  const providerValue = useMemo(() => {
+    return {
+      gain,
+      setGain
+    };
+  }, [gain, setGain]);
+
   return (
     <Suspense fallback={<FallbackMessage />}>
-      <GainContext.Provider value={{ gain, setGain, gainNode }}>
-        <KeySeq />
+      <GainContext.Provider value={providerValue}>
+        <GainNodeContext.Provider value={gainNode}>
+          <KeySeq />
+        </GainNodeContext.Provider>
       </GainContext.Provider>
     </Suspense>
   );
