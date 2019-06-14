@@ -332,6 +332,12 @@ const [reducer, initialState, getCurrentSequence, getKeyState] = f(() => {
 
   function reducer(state, action) {
     switch (action.type) {
+      case 'resetAll':
+        return {
+          ...state,
+          sequences: initialState.sequences,
+          undoStack: initialState.undoStack
+        };
       case 'resetSequence':
         return {
           ...state,
