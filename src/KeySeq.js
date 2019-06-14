@@ -666,7 +666,7 @@ const VerticalMeter = forwardRef(({ className = '', style, colors, scale }, ref)
 
 const AnimatedVerticalMeter = animated(VerticalMeter);
 
-function HiddenContainer({ direction = -1, staggerVisible = 0, isVisible, children }) {
+function HiddenContainer({ className = '', direction = -1, staggerVisible = 0, isVisible, children }) {
   // the normal useSpring will be reset on re-render, which is a problem during
   // playback - the delay means updates are continually queued. use this form
   // instead and update only when props have changed.
@@ -683,7 +683,7 @@ function HiddenContainer({ direction = -1, staggerVisible = 0, isVisible, childr
   }, [isVisible, staggerVisible]);
 
   return (
-    <div className="flex-none">
+    <div className={`flex-none ${className}`}>
       <animated.div
         style={{
           opacity: props.value,
@@ -869,7 +869,7 @@ export default function KeySeq() {
   })));
 
   return (
-    <div className="absolute absolute--fill mv4 flex flex-column items-center justify-center dark-gray overflow-hidden" ref={mouseRef}>
+    <div className="absolute absolute--fill mv4 flex flex-column dark-gray overflow-hidden" ref={mouseRef}>
       {mapRange(maxColumnCount, function (columnIndex) {
         const column = visibleColumns[columnIndex];
         const colors = columnColors[columnIndex];
@@ -888,7 +888,9 @@ export default function KeySeq() {
           />
         );
       })}
-      <div className="flex pa3 w-100 absolute top-0">
+      <div
+        className="flex-none flex pa3 w-100 relative"
+      >
         <ButtonA
           onClick={() => setIsPlaying(!isPlaying)}
         >
@@ -950,11 +952,13 @@ export default function KeySeq() {
         <span className="dib w2 flex-auto flex-shrink-0" />
         <GainRange />
       </div>
-      <div className="f3 tc pointer-events-none relative">
+      <div
+        className="flex-auto h-100 f3 tc pointer-events-none relative flex flex-column justify-end"
+      >
         <p className="ma0 mb2 b">{selectedColumn.label}</p>
         <p className="ma0 mb4 tabular-nums">{selectedColumn.toString(selectedColumnValue)}</p>
       </div>
-      <div className="flex pointer-events-none relative">
+      <div className="flex-none flex pointer-events-none justify-center relative">
         {keyState.map(function (value, index) {
           const cellValue = selectedColumn.normalise(sequence[index][selectedColumn.key]);
           const cellColors = columnColors[selectedColumnIndex];
@@ -986,32 +990,36 @@ export default function KeySeq() {
           );
         })}
       </div>
-      <div className="h2" />
-      <HiddenContainer direction={1} staggerVisible={1} isVisible={showAdvancedControls}>
-        <div className="flex pointer-events-none">
-          {sequencesIndexKeys.map((sequencesIndexKey, index) => {
-            const props = sequencesIndexKeyProps[index];
+      <div className="flex-auto h-100">
+        <HiddenContainer direction={1} staggerVisible={1} isVisible={showAdvancedControls}>
+          <div className="mt4 flex justify-center pointer-events-none">
+            {sequencesIndexKeys.map((sequencesIndexKey, index) => {
+              const props = sequencesIndexKeyProps[index];
 
-            return (
-              <React.Fragment key={sequencesIndexKey.label}>
-                {index > 0 ? <span className="dib w1 flex-none" /> : null}
-                <animated.div
-                  className="flex-none"
-                  style={{
-                    opacity: props.y.interpolate({ output: [0.25, 1], extrapolate: 'clamp' }),
-                    transform: props.y.interpolate(value => `translateY(${value * 10}%)`),
-                    willChange: 'opacity, transform'
-                  }}
-                >
-                  <KeyLabel>{sequencesIndexKey.label}</KeyLabel>
-                </animated.div>
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </HiddenContainer>
-      <div className="flex items-end pa3 w-100 absolute bottom-0">
+              return (
+                <React.Fragment key={sequencesIndexKey.label}>
+                  {index > 0 ? <span className="dib w1 flex-none" /> : null}
+                  <animated.div
+                    className="flex-none"
+                    style={{
+                      opacity: props.y.interpolate({ output: [0.25, 1], extrapolate: 'clamp' }),
+                      transform: props.y.interpolate(value => `translateY(${value * 10}%)`),
+                      willChange: 'opacity, transform'
+                    }}
+                  >
+                    <KeyLabel>{sequencesIndexKey.label}</KeyLabel>
+                  </animated.div>
+                </React.Fragment>
+              );
+            })}
+          </div>
+        </HiddenContainer>
+      </div>
+      <div
+        className="flex-none flex items-end pa3"
+      >
         <HiddenContainer
+          className="absolute"
           direction={1}
           staggerVisible={1}
           isVisible={!showAdvancedControls}
