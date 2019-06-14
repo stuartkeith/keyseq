@@ -24,7 +24,7 @@ function FallbackMessage() {
 }
 
 function App() {
-  const [gain, setGain] = useLocalStorageState('gain', 1);
+  const [gain, setGain] = useLocalStorageState('KeySeq.gain', 1);
 
   useEffect(function () {
     gainNode.gain.value = Math.pow(gain, 1.6);
