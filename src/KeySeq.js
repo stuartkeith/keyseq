@@ -41,14 +41,14 @@ function generateColumnColorSet(index) {
 }
 
 const sequenceKeys = [
-  { code: 'Digit1', label: '1' },
-  { code: 'Digit2', label: '2' },
-  { code: 'Digit3', label: '3' },
-  { code: 'Digit4', label: '4' },
-  { code: 'Digit5', label: '5' },
-  { code: 'Digit6', label: '6' },
-  { code: 'Digit7', label: '7' },
-  { code: 'Digit8', label: '8' }
+  { code: 'Digit1', label: ['!', '1'] },
+  { code: 'Digit2', label: ['@', '2'] },
+  { code: 'Digit3', label: ['#', '3'] },
+  { code: 'Digit4', label: ['$', '4'] },
+  { code: 'Digit5', label: ['%', '5'] },
+  { code: 'Digit6', label: ['^', '6'] },
+  { code: 'Digit7', label: ['&', '7'] },
+  { code: 'Digit8', label: ['*', '8'] }
 ];
 
 const sequencesIndexKeys = [
@@ -969,6 +969,7 @@ export default function KeySeq() {
           const cellValue = selectedColumn.normalise(sequence[index][selectedColumn.key]);
           const cellColors = columnColors[selectedColumnIndex];
           const props = keyStateProps[index];
+          const sequenceKey = sequenceKeys[index];
 
           return (
             <React.Fragment key={index}>
@@ -990,7 +991,11 @@ export default function KeySeq() {
                   colors={cellColors}
                   scale={cellValue}
                 />
-                <span className="relative">{sequenceKeys[index].label}</span>
+                <span className="relative tc lh-title">
+                  {sequenceKey.label[0]}
+                  <br/>
+                  {sequenceKey.label[1]}
+                </span>
               </animated.div>
             </React.Fragment>
           );
