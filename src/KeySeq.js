@@ -713,12 +713,58 @@ function KeyLabel({ width = 2, children }) {
   );
 }
 
+function KeyHint({ columnColors, keyLabel }) {
+  const keyLabelCopy = useRef();
+
+  // always show the last non-falsey value, to avoid it disappearing while
+  // transitioning out.
+  if (keyLabel) {
+    keyLabelCopy.current = keyLabel;
+  }
+
+  // the normal useSpring will be reset on re-render, which is a problem during
+  // playback - the delay means updates are continually queued. use this form
+  // instead and update only when props have changed.
+  const [props, set] = useSpring(() => ({
+    from: {
+      opacity: keyLabel ? 1 : 0
+    },
+    to: {
+      opacity: keyLabel ? 1 : 0
+    }
+  }));
+
+  useEffect(function () {
+    set({
+      opacity: keyLabel ? 1 : 0
+    });
+  }, [keyLabel]);
+
+  const color = columnColors.background;
+
+  return (
+    <animated.div
+      className="tl f5 pa3 box-shadow-1 ml-auto mr-auto mt4 relative"
+      style={{
+        backgroundColor: color,
+        opacity: props.opacity,
+        visibility: props.opacity.interpolate(x => x > 0 ? 'visible' : 'hidden')
+      }}
+    >
+      <p className="ma0">
+        Hold the <span className="b tabular-nums">{keyLabelCopy.current}</span> key on your keyboard and move the mouse!
+      </p>
+    </animated.div>
+  );
+}
+
 export default function KeySeq() {
   const destinationNode = useContext(GainNodeContext);
   const [bpm, setBpm] = useState(96);
   const [swing, setSwing] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showAdvancedControls, setShowAdvancedControls] = useLocalStorageState('KeySeq.showAdvancedControls', false);
+  const [keyLabelClicked, setKeyLabelClicked] = useState(null);
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -782,6 +828,10 @@ export default function KeySeq() {
 
     if (sequenceKeysIndex >= 0) {
       if (isDown) {
+        if (keyLabelClicked) {
+          setKeyLabelClicked(null);
+        }
+
         dispatch({
           type: 'keyDown',
           sequenceKeysIndex,
@@ -853,7 +903,7 @@ export default function KeySeq() {
 
       return;
     }
-  }, [sequenceKeys, state, dispatch, selectedColumn, selectedColumnValue, showAdvancedControls]);
+  }, [sequenceKeys, state, dispatch, selectedColumn, selectedColumnValue, showAdvancedControls, keyLabelClicked]);
 
   const columnProps = useSpring({
     immediate: !viewportDimensions.hasTimedOut,
@@ -964,7 +1014,7 @@ export default function KeySeq() {
         <p className="ma0 mb2 b">{selectedColumn.label}</p>
         <p className="ma0 mb4 tabular-nums">{selectedColumn.toString(selectedColumnValue)}</p>
       </div>
-      <div className="flex-none flex pointer-events-none justify-center relative">
+      <div className="flex-none flex justify-center relative">
         {keyState.map(function (value, index) {
           const cellValue = selectedColumn.normalise(sequence[index][selectedColumn.key]);
           const cellColors = columnColors[selectedColumnIndex];
@@ -985,13 +1035,14 @@ export default function KeySeq() {
                   transform: props.y.interpolate(value => `translateY(${value * 6}px)`),
                   willChange: 'opacity, transform'
                 }}
+                onClick={() => setKeyLabelClicked(sequenceKey.label[1])}
               >
                 <VerticalMeter
                   className="absolute absolute--fill"
                   colors={cellColors}
                   scale={cellValue}
                 />
-                <span className="relative tc lh-title">
+                <span className="relative tc lh-title pointer-events-none">
                   {sequenceKey.label[0]}
                   <br/>
                   {sequenceKey.label[1]}
@@ -1001,7 +1052,8 @@ export default function KeySeq() {
           );
         })}
       </div>
-      <div className="flex-auto h-100">
+      <div className="flex flex-column flex-auto h-100 relative">
+        <KeyHint columnColors={columnColors[selectedColumnIndex]} keyLabel={keyLabelClicked} />
         <HiddenContainer direction={1} staggerVisible={1} isVisible={showAdvancedControls}>
           <div className="mt4 flex justify-center pointer-events-none">
             {sequencesIndexKeys.map((sequencesIndexKey, index) => {
