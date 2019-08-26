@@ -1,5 +1,5 @@
-import React from 'react';
-import { LabelA } from './LabelA';
+import React from "react";
+import { LabelA } from "./LabelA";
 
 export function ButtonA({ disabled, onClick, children }) {
   return (

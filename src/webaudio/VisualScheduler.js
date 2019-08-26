@@ -1,5 +1,5 @@
-import audioContext from './audioContext';
-import CircularBuffer from './CircularBuffer';
+import audioContext from "./audioContext";
+import CircularBuffer from "./CircularBuffer";
 
 class VisualScheduler {
   constructor() {

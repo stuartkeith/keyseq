@@ -14,10 +14,7 @@ export function arrayShiftBy(array, direction) {
   const boundOffset = Math.abs(direction) % array.length;
   const index = direction < 0 ? boundOffset : array.length - boundOffset;
 
-  return [
-    ...array.slice(index),
-    ...array.slice(0, index)
-  ];
+  return [...array.slice(index), ...array.slice(0, index)];
 }
 
 export function mapRange(limit, fn) {

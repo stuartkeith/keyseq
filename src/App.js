@@ -1,11 +1,11 @@
-import React, { Suspense, useEffect, useMemo } from 'react';
-import { GainContext, GainNodeContext } from './components/GainRange';
-import { useLocalStorageState } from './hooks/useLocalStorageState';
-import audioContext from './webaudio/audioContext';
+import React, { Suspense, useEffect, useMemo } from "react";
+import { GainContext, GainNodeContext } from "./components/GainRange";
+import { useLocalStorageState } from "./hooks/useLocalStorageState";
+import audioContext from "./webaudio/audioContext";
 
 const f = callback => callback();
 
-const KeySeq = React.lazy(() => import('./KeySeq'));
+const KeySeq = React.lazy(() => import("./KeySeq"));
 
 const gainNode = f(() => {
   const gainNode = audioContext.createGain();
@@ -24,11 +24,14 @@ function FallbackMessage() {
 }
 
 function App() {
-  const [gain, setGain] = useLocalStorageState('KeySeq.gain', 1);
+  const [gain, setGain] = useLocalStorageState("KeySeq.gain", 1);
 
-  useEffect(function () {
-    gainNode.gain.value = Math.pow(gain, 1.6);
-  }, [gain]);
+  useEffect(
+    function() {
+      gainNode.gain.value = Math.pow(gain, 1.6);
+    },
+    [gain]
+  );
 
   const providerValue = useMemo(() => {
     return {

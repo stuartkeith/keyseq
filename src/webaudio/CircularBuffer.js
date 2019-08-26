@@ -1,11 +1,11 @@
 function incrementValue(value, max) {
-  return value === max ? 0 : (value + 1);
+  return value === max ? 0 : value + 1;
 }
 
 class CircularBuffer {
   constructor(length) {
     if (length < 1) {
-      throw new Error('CircularBuffer length must be >= 1');
+      throw new Error("CircularBuffer length must be >= 1");
     }
 
     this.buffer = new Array(length + 1)

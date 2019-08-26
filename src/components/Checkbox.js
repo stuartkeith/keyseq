@@ -1,10 +1,8 @@
-import React from 'react';
+import React from "react";
 
-export function Checkbox({ className = '', checked, onChange, children }) {
+export function Checkbox({ className = "", checked, onChange, children }) {
   return (
-    <label
-      className={`relative dib ${className}`}
-    >
+    <label className={`relative dib ${className}`}>
       <input
         type="checkbox"
         className="input-reset absolute absolute--fill w-100"

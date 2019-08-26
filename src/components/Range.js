@@ -1,17 +1,32 @@
-import React from 'react';
+import React from "react";
 
-export function Range({ value, disabled, min, max, step, containerClassName = '', sliderClassName = '', children, onChange }) {
+export function Range({
+  value,
+  disabled,
+  min,
+  max,
+  step,
+  containerClassName = "",
+  sliderClassName = "",
+  children,
+  onChange
+}) {
   const scale = (value - min) / (max - min);
 
   const sliderStyle = {
-    transformOrigin: '0 0',
+    transformOrigin: "0 0",
     transform: `scaleX(${scale})`,
-    willChange: 'transform'
+    willChange: "transform"
   };
 
   return (
-    <div className={`relative tabular-nums overflow-hidden ${containerClassName}`}>
-      <div className={`absolute absolute--fill ${sliderClassName}`} style={sliderStyle} />
+    <div
+      className={`relative tabular-nums overflow-hidden ${containerClassName}`}
+    >
+      <div
+        className={`absolute absolute--fill ${sliderClassName}`}
+        style={sliderStyle}
+      />
       {children}
       <input
         type="range"

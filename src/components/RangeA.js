@@ -1,6 +1,6 @@
-import React from 'react';
-import { Range } from './Range';
-import { LabelA } from './LabelA';
+import React from "react";
+import { Range } from "./Range";
+import { LabelA } from "./LabelA";
 
 export function RangeA({ children, ...props }) {
   return (

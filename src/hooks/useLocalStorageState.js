@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 function localStorageGetItemSafe(key, defaultValue) {
   let value;
@@ -6,7 +6,8 @@ function localStorageGetItemSafe(key, defaultValue) {
   try {
     const localStorageValue = localStorage.getItem(key);
 
-    value = localStorageValue !== null ? JSON.parse(localStorageValue) : defaultValue;
+    value =
+      localStorageValue !== null ? JSON.parse(localStorageValue) : defaultValue;
   } catch (e) {
     value = defaultValue;
   }
@@ -23,11 +24,16 @@ function localStorageSetItemSafe(key, value) {
 }
 
 export function useLocalStorageState(key, defaultValue) {
-  const [value, setValue] = useState(() => localStorageGetItemSafe(key, defaultValue));
+  const [value, setValue] = useState(() =>
+    localStorageGetItemSafe(key, defaultValue)
+  );
 
-  useEffect(function () {
-    localStorageSetItemSafe(key, value);
-  }, [value]);
+  useEffect(
+    function() {
+      localStorageSetItemSafe(key, value);
+    },
+    [key, value]
+  );
 
   return [value, setValue];
-};
+}

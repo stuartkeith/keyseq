@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 function getViewport(hasTimedOut) {
   // hasTimedOut - set to false until a timeout has elapsed. this can be used to
@@ -13,14 +13,14 @@ function getViewport(hasTimedOut) {
 export function useViewport() {
   const [dimensions, setDimensions] = useState(getViewport(true));
 
-  useEffect(function () {
+  useEffect(function() {
     let timeoutId;
 
-    const onResizeTimeout = function () {
+    const onResizeTimeout = function() {
       setDimensions(getViewport(true));
     };
 
-    const onResize = function () {
+    const onResize = function() {
       setDimensions(getViewport(false));
 
       clearTimeout(timeoutId);
@@ -28,10 +28,10 @@ export function useViewport() {
       timeoutId = setTimeout(onResizeTimeout, 600);
     };
 
-    window.addEventListener('resize', onResize);
+    window.addEventListener("resize", onResize);
 
-    return function () {
-      window.removeEventListener('resize', onResize);
+    return function() {
+      window.removeEventListener("resize", onResize);
     };
   }, []);
 

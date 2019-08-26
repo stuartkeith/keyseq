@@ -1,4 +1,4 @@
-import audioContext from './audioContext';
+import audioContext from "./audioContext";
 
 const LOOK_AHEAD_SECONDS = 0.2;
 const TIMEOUT_MILLISECONDS = 0.14 * 1000;
@@ -14,10 +14,16 @@ function update(scheduler, beatTime, index) {
     index++;
   }
 
-  scheduler.timeout = window.setTimeout(update, TIMEOUT_MILLISECONDS, scheduler, beatTime, index);
+  scheduler.timeout = window.setTimeout(
+    update,
+    TIMEOUT_MILLISECONDS,
+    scheduler,
+    beatTime,
+    index
+  );
 }
 
-const Scheduler = function (bpm = 120, ticksPerBeat = 4) {
+const Scheduler = function(bpm = 120, ticksPerBeat = 4) {
   this.bpm = bpm;
   this.ticksPerBeat = ticksPerBeat;
 
@@ -25,7 +31,7 @@ const Scheduler = function (bpm = 120, ticksPerBeat = 4) {
   this.timeout = null;
 };
 
-Scheduler.prototype.start = function () {
+Scheduler.prototype.start = function() {
   if (this.timeout) {
     return;
   }
@@ -33,7 +39,7 @@ Scheduler.prototype.start = function () {
   update(this, audioContext.currentTime, 0);
 };
 
-Scheduler.prototype.stop = function () {
+Scheduler.prototype.stop = function() {
   window.clearTimeout(this.timeout);
 
   this.timeout = null;

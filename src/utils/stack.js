@@ -31,7 +31,10 @@ export function push(t, value) {
   t.array[t.indexHead] = value;
 
   const indexHead = incrementValue(t.indexHead, t.indexMax);
-  const indexTail = indexHead === t.indexTail ? incrementValue(t.indexTail, t.indexMax) : t.indexTail;
+  const indexTail =
+    indexHead === t.indexTail
+      ? incrementValue(t.indexTail, t.indexMax)
+      : t.indexTail;
 
   return {
     ...t,
@@ -42,7 +45,7 @@ export function push(t, value) {
 
 export function pop(t) {
   if (isEmpty(t)) {
-    throw new Error('stack is empty');
+    throw new Error("stack is empty");
   }
 
   const indexHead = decrementValue(t.indexHead, t.indexMax);
@@ -55,7 +58,7 @@ export function pop(t) {
 
 export function read(t) {
   if (isEmpty(t)) {
-    throw new Error('stack is empty');
+    throw new Error("stack is empty");
   }
 
   const arrayIndex = decrementValue(t.indexHead, t.indexMax);
