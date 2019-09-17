@@ -562,14 +562,12 @@ function useKeyboard(callback) {
 
   useEffect(
     function() {
-      const callback = callbackRef.current;
-
       const onWindowBlur = function() {
         Object.keys(state).forEach(function(key) {
           if (state[key]) {
             state[key] = false;
 
-            callback(key, false);
+            callbackRef.current(key, false);
           }
         });
       };
@@ -581,13 +579,13 @@ function useKeyboard(callback) {
 
         state[event.code] = true;
 
-        callback(event.code, true);
+        callbackRef.current(event.code, true);
       };
 
       const onKeyUp = function(event) {
         state[event.code] = false;
 
-        callback(event.code, false);
+        callbackRef.current(event.code, false);
       };
 
       window.addEventListener("blur", onWindowBlur);
