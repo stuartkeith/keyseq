@@ -24,7 +24,7 @@ function FallbackMessage() {
 }
 
 function App() {
-  const [gain, setGain] = useLocalStorageState("KeySeq.gain", 1);
+  const [gain, setGain] = useLocalStorageState("App.gain", 1);
 
   useEffect(
     function() {
