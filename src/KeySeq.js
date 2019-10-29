@@ -859,6 +859,7 @@ export default function KeySeq() {
   const destinationNode = useContext(GainNodeContext);
   const [bpm, setBpm] = useState(96);
   const [swing, setSwing] = useState(0);
+  const [shouldPlayOnKeyDown, setShouldPlayOnKeyDown] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showAdvancedControls, setShowAdvancedControls] = useLocalStorageState(
     "KeySeq.showAdvancedControls",
@@ -963,6 +964,12 @@ export default function KeySeq() {
             type: "keyUp",
             sequenceKeysIndex
           });
+        }
+
+        if (shouldPlayOnKeyDown && isDown) {
+          setShouldPlayOnKeyDown(false);
+
+          setIsPlaying(true);
         }
 
         return;
