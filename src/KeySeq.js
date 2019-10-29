@@ -94,7 +94,7 @@ const columns = f(() => {
       label: "Note",
       key: "note",
       ...arrayColumn(
-        0,
+        (array, index) => index === 0 ? 1 : 0,
         [null, 0, 2, 3, 5, 7, 8, 11], // harmonic minor scale
         (value, array) =>
           value === null ? "-" : array.indexOf(value).toString()
@@ -113,7 +113,7 @@ const columns = f(() => {
     filterFrequency: {
       label: "Filter Frequency",
       key: "filterFrequency",
-      defaultValue: 1,
+      getDefaultValue: () => 1,
       denormalise: passThrough,
       normalise: passThrough,
       toString: numberToPercentageString
@@ -121,7 +121,7 @@ const columns = f(() => {
     filterResonance: {
       label: "Filter Resonance",
       key: "filterResonance",
-      defaultValue: 0,
+      getDefaultValue: () => 0,
       denormalise: passThrough,
       normalise: passThrough,
       toString: numberToPercentageString
@@ -129,7 +129,7 @@ const columns = f(() => {
     lfoFrequency: {
       label: "LFO Frequency",
       key: "lfoFrequency",
-      defaultValue: 0,
+      getDefaultValue: () => 0,
       denormalise: passThrough,
       normalise: passThrough,
       toString: numberToPercentageString
@@ -137,7 +137,7 @@ const columns = f(() => {
     lfoGain: {
       label: "LFO Gain",
       key: "lfoGain",
-      defaultValue: 0,
+      getDefaultValue: () => 0,
       denormalise: passThrough,
       normalise: passThrough,
       toString: numberToPercentageString
@@ -145,7 +145,7 @@ const columns = f(() => {
     decay: {
       label: "Decay",
       key: "decay",
-      defaultValue: 0.5,
+      getDefaultValue: () => 0.5,
       denormalise: passThrough,
       normalise: passThrough,
       toString: numberToPercentageString
@@ -153,16 +153,16 @@ const columns = f(() => {
     waveform: {
       label: "Waveform",
       key: "waveform",
-      ...arrayColumn(0, ["sawtooth", "square", "sine"], passThrough)
+      ...arrayColumn(() => 0, ["sawtooth", "square", "sine"], passThrough)
     }
   };
 
   return columns;
 
   // helper to create a column that represents a specific value within an array.
-  function arrayColumn(defaultIndex, array, toString) {
+  function arrayColumn(getDefaultIndex, array, toString) {
     return {
-      defaultValue: array[defaultIndex],
+      getDefaultValue: (index) => array[getDefaultIndex(array, index)],
       denormalise: normalisedValue => {
         // convert 0 to 1 to array value
         const arrayIndex = inRange(
@@ -192,7 +192,7 @@ const columns = f(() => {
     const range = maxValue - minValue + 1;
 
     return {
-      defaultValue,
+      getDefaultValue: () => defaultValue,
       denormalise: normalisedValue => {
         return inRange(
           minValue + Math.floor(normalisedValue * range),
@@ -212,7 +212,7 @@ const columns = f(() => {
     const range = maxValue - minValue;
 
     return {
-      defaultValue,
+      getDefaultValue: () => defaultValue,
       denormalise: normalisedValue => {
         return minValue + range * normalisedValue;
       },
@@ -227,8 +227,9 @@ const columns = f(() => {
 // main app reducer, with helpers.
 const [reducer, initialState, getCurrentSequence, getKeyState] = f(() => {
   // a sequence is an array of cells, each cell holding values for each column.
-  const emptyCell = createCell(column => column.defaultValue);
-  const emptySequence = sequenceKeys.map(() => emptyCell);
+  const emptySequence = sequenceKeys.map((_, index) => {
+    return createCell((column) => column.getDefaultValue(index));
+  });
 
   const initialState = {
     // physicalKeyState - "physical" in that the actual key state used is
